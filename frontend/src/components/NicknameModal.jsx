@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { IconPencil, IconX, IconCheck } from './Icons';
 
 export const NicknameModal = ({
-  isOpen,
+  isOpen = true,
   onClose,
   targetUser,
   currentNickname,
+  onSave,
   onSaveNickname,
 }) => {
   const [nickname, setNickname] = useState('');
@@ -14,16 +15,18 @@ export const NicknameModal = ({
     setNickname(currentNickname || '');
   }, [currentNickname, isOpen]);
 
-  if (!isOpen || !targetUser) return null;
+  if (isOpen === false || !targetUser) return null;
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSaveNickname?.(targetUser._id, nickname.trim());
+    const saveCb = onSave || onSaveNickname;
+    if (saveCb) saveCb(targetUser._id, nickname.trim());
     onClose();
   };
 
   const handleClear = () => {
-    onSaveNickname?.(targetUser._id, '');
+    const saveCb = onSave || onSaveNickname;
+    if (saveCb) saveCb(targetUser._id, '');
     onClose();
   };
 

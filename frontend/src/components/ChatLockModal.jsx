@@ -2,23 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { IconLock, IconUnlock, IconX, IconAlertCircle } from './Icons';
 
 export const ChatLockModal = ({
-  isOpen,
+  isOpen = true,
   onClose,
   targetName,
-  isSettingPin, // true if creating/changing master PIN
+  isSettingPin,
   onSuccess,
   savedPin,
-  mode = 'unlock', // 'unlock' | 'set_pin' | 'confirm_lock'
+  existingPin,
+  onSavePin,
+  mode = 'verify', // 'verify' | 'set_pin' | 'unlock'
 }) => {
   const [pin, setPin] = useState(['', '', '', '']);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const targetPin = savedPin || existingPin || '';
 
   useEffect(() => {
     setPin(['', '', '', '']);
     setErrorMsg('');
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (isOpen === false) return null;
 
   const handleDigitChange = (val, idx) => {
     if (!/^\d*$/.test(val)) return;
@@ -43,7 +47,7 @@ export const ChatLockModal = ({
   };
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     const entered = pin.join('');
     if (entered.length < 4) {
       setErrorMsg('Please enter all 4 digits');
@@ -51,12 +55,13 @@ export const ChatLockModal = ({
     }
 
     if (mode === 'set_pin') {
-      onSuccess?.(entered);
+      if (onSavePin) onSavePin(entered);
+      if (onSuccess) onSuccess(entered);
       onClose();
     } else {
-      // Unlocking mode: verify PIN
-      if (entered === savedPin) {
-        onSuccess?.();
+      // Unlocking / Verification mode: verify PIN
+      if (!targetPin || entered === targetPin) {
+        if (onSuccess) onSuccess(entered);
         onClose();
       } else {
         setErrorMsg('Incorrect Passcode. Try again.');

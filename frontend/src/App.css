@@ -8750,7 +8750,53 @@ label {
 /* ============================================================
    CHAT LOCK PIN MODAL
    ============================================================ */
-.lock-pin-container {
+.chat-lock-card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+  padding: 2rem;
+  position: relative;
+  text-align: center;
+  animation: modalPopIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.chat-lock-header {
+  margin-bottom: 1.5rem;
+}
+
+.chat-lock-icon-glow {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.15);
+  border: 1.5px solid rgba(99, 102, 241, 0.4);
+  color: #818cf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
+}
+
+.chat-lock-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.4rem;
+}
+
+.chat-lock-desc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.lock-pin-inputs {
   display: flex;
   gap: 12px;
   justify-content: center;
@@ -8758,27 +8804,378 @@ label {
 }
 
 .lock-pin-box {
-  width: 48px;
-  height: 54px;
+  width: 50px;
+  height: 56px;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.06);
   border: 2px solid rgba(255, 255, 255, 0.15);
   color: #fff;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 700;
   text-align: center;
   outline: none;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-sizing: border-box;
 }
 
 .lock-pin-box:focus {
   border-color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.12);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+  transform: translateY(-2px);
 }
 
-.lock-pin-box.filled {
-  border-color: #6366f1;
+.lock-error-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  border-radius: 20px;
+  color: #f87171;
+  font-size: 0.8rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+/* ============================================================
+   NICKNAME MODAL
+   ============================================================ */
+.nickname-modal-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+  padding: 1.75rem;
+  animation: modalPopIn 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   STATUS CREATOR MODAL DETAILS
+   ============================================================ */
+.status-mode-tabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 4px;
+  border-radius: var(--radius-md);
+  gap: 6px;
+  margin-bottom: 1rem;
+}
+
+.status-mode-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.status-mode-btn.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.status-preview-box {
+  min-height: 200px;
+  max-height: 260px;
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  transition: background-color 0.3s ease;
+}
+
+.status-preview-media {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.status-preview-media img {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+}
+
+.status-remove-photo-btn {
+  margin-top: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.status-upload-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 2rem;
+  text-align: center;
+}
+
+.status-upload-dropzone:hover {
+  color: var(--text-primary);
+}
+
+.status-textarea-input {
+  width: 100%;
+  height: 140px;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+  resize: none;
+  outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-colors-palette {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.status-color-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.status-color-circle:hover {
+  transform: scale(1.18);
+}
+
+.status-color-circle.active {
+  border-color: #fff;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+  transform: scale(1.18);
+}
+
+/* ============================================================
+   STATUS VIEWER MODAL
+   ============================================================ */
+.status-viewer-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.94);
+  backdrop-filter: blur(14px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-progress-bars {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  gap: 4px;
+  z-index: 35;
+}
+
+.status-progress-bars .status-progress-track {
+  position: static;
+  background: rgba(255, 255, 255, 0.25);
+  height: 3px;
+  border-radius: 2px;
+  flex: 1;
+  padding: 0;
+  overflow: hidden;
+}
+
+.status-progress-fill.completed {
+  width: 100%;
+}
+
+.status-progress-fill.active {
+  width: 100%;
+  animation: progressFill 6s linear forwards;
+}
+
+@keyframes progressFill {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.status-viewer-header {
+  position: absolute;
+  top: 24px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 35;
+  color: #fff;
+}
+
+.status-viewer-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid #fff;
+}
+
+.status-user-avatar.placeholder {
+  background: #6366f1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+.status-user-name {
+  font-weight: 600;
+  font-size: 0.925rem;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+}
+
+.status-time-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.status-close-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.status-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.status-media-wrap {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.status-media-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.status-media-caption {
+  position: absolute;
+  bottom: 12px;
+  left: 14px;
+  right: 14px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(6px);
+  padding: 8px 14px;
+  border-radius: 12px;
+  color: #fff;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.status-text-content {
+  padding: 2.5rem;
+  text-align: center;
+  color: #fff;
+  font-size: 1.45rem;
+  font-weight: 600;
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.status-nav-area {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 40%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  z-index: 25;
+}
+
+.status-nav-area.left { left: 0; }
+.status-nav-area.right { right: 0; }
+
+.status-reply-btn {
+  padding: 8px 14px;
+  border-radius: 20px;
+  background: #10b981;
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.status-reply-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 @media (max-width: 768px) {

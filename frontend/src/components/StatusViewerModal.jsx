@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { IconX, IconArrowLeft, IconArrowRight, IconSend, IconClock } from './Icons';
+import { IconX, IconArrowLeft, IconArrowRight, IconSend, IconClock, IconTrash } from './Icons';
 
 export const StatusViewerModal = ({
-  isOpen,
+  isOpen = true,
   onClose,
   statusGroup, // { user, statuses: [...] }
   onReply,
   currentUser,
+  currentUserId,
+  onViewStatus,
+  onDeleteStatus,
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [replyText, setReplyText] = useState('');
@@ -19,9 +22,16 @@ export const StatusViewerModal = ({
     setReplyText('');
   }, [statusGroup]);
 
+  // Mark status as viewed whenever activeStatus changes
+  useEffect(() => {
+    if (activeStatus && onViewStatus) {
+      onViewStatus(activeStatus._id);
+    }
+  }, [activeStatus?._id]);
+
   // Auto advance every 6 seconds
   useEffect(() => {
-    if (!isOpen || statuses.length === 0) return;
+    if (isOpen === false || statuses.length === 0) return;
 
     const timer = setTimeout(() => {
       if (currentIndex < statuses.length - 1) {
@@ -34,7 +44,7 @@ export const StatusViewerModal = ({
     return () => clearTimeout(timer);
   }, [isOpen, currentIndex, statuses.length]);
 
-  if (!isOpen || !statusGroup || !activeStatus) return null;
+  if (isOpen === false || !statusGroup || !activeStatus) return null;
 
   const handlePrev = (e) => {
     e.stopPropagation();
@@ -107,9 +117,26 @@ export const StatusViewerModal = ({
             </div>
           </div>
 
-          <button type="button" className="status-close-btn" onClick={onClose}>
-            <IconX size={18} />
-          </button>
+          <div className="status-header-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            {statusGroup.user?._id === (currentUser?._id || currentUserId) && onDeleteStatus && (
+              <button
+                type="button"
+                className="status-close-btn"
+                title="Delete this update"
+                onClick={() => {
+                  if (window.confirm('Delete this status update?')) {
+                    onDeleteStatus(activeStatus._id);
+                    onClose();
+                  }
+                }}
+              >
+                <IconTrash size={16} />
+              </button>
+            )}
+            <button type="button" className="status-close-btn" onClick={onClose}>
+              <IconX size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Slide Content */}

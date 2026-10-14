@@ -12,26 +12,30 @@ const COLOR_PRESETS = [
   '#e11d48', // Rose
 ];
 
-export const StatusCreatorModal = ({ isOpen, onClose, onStatusCreated, showToast }) => {
+import { useAuth } from '../context/AuthContext';
+import { statusAPI } from '../services/api';
+
+export const StatusCreatorModal = ({ isOpen = true, onClose, onCreated, onStatusCreated, showToast }) => {
+  const { token: authToken } = useAuth();
   const [mode, setMode] = useState('text'); // 'text' | 'media'
   const [text, setText] = useState('');
   const [selectedColor, setSelectedColor] = useState('#6366f1');
   const [media, setMedia] = useState('');
   const [isPosting, setIsPosting] = useState(false);
 
-  if (!isOpen) return null;
+  if (isOpen === false) return null;
 
   const handleMediaUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      showToast?.('Please upload a valid image file');
+      if (showToast) showToast('Please upload a valid image file');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      showToast?.('Image must be under 5MB');
+      if (showToast) showToast('Image must be under 5MB');
       return;
     }
 
@@ -44,40 +48,33 @@ export const StatusCreatorModal = ({ isOpen, onClose, onStatusCreated, showToast
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!text.trim() && !media) {
-      showToast?.('Please enter some text or select an image');
+      if (showToast) showToast('Please enter some text or select an image');
       return;
     }
 
     setIsPosting(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/status', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          text: text.trim(),
-          media,
-          bgColor: selectedColor,
-        }),
+      const token = authToken || localStorage.getItem('mern_auth_token') || localStorage.getItem('token');
+      const data = await statusAPI.createStatus(token, {
+        text: text.trim(),
+        media,
+        bgColor: selectedColor,
       });
 
-      const data = await res.json();
       if (data.success) {
-        showToast?.('Status posted! Expires in 24 hours');
-        onStatusCreated?.(data.status);
+        if (showToast) showToast('Status posted! Expires in 24 hours');
+        const cb = onCreated || onStatusCreated;
+        if (cb) cb(data.status);
         setText('');
         setMedia('');
         onClose();
       } else {
-        showToast?.(data.message || 'Failed to post status');
+        if (showToast) showToast(data.message || 'Failed to post status');
       }
     } catch (err) {
-      showToast?.('Failed to post status');
+      if (showToast) showToast(err.message || 'Failed to post status');
     } finally {
       setIsPosting(false);
     }

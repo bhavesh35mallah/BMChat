@@ -3664,31 +3664,40 @@ export const ChatBox = () => {
       {/* 24-Hour Stories / Status Viewer Modal */}
       {selectedStatusGroup && (
         <StatusViewerModal
+          isOpen={true}
           statusGroup={selectedStatusGroup}
           onClose={() => setSelectedStatusGroup(null)}
           onViewStatus={handleViewStatus}
           onDeleteStatus={handleDeleteStatus}
           onReply={handleReplyToStatus}
           currentUserId={user?._id}
+          currentUser={user}
         />
       )}
 
       {/* New Status / Story Creator Modal */}
       {showStatusCreator && (
         <StatusCreatorModal
+          isOpen={true}
           onClose={() => setShowStatusCreator(false)}
           onCreated={handleStatusCreated}
+          showToast={showToast}
         />
       )}
 
       {/* Chat Lock 4-Digit PIN Security Modal */}
       {lockModalConfig.isOpen && (
         <ChatLockModal
+          isOpen={true}
           mode={lockModalConfig.mode}
           targetName={getDisplayName(lockModalConfig.targetPartner)}
           existingPin={chatLockPin}
+          savedPin={chatLockPin}
           onSavePin={handleSavePin}
-          onSuccess={() => {
+          onSuccess={(enteredPin) => {
+            if (lockModalConfig.mode === 'set_pin' && enteredPin) {
+              handleSavePin(enteredPin);
+            }
             const cb = lockModalConfig.onVerified;
             setLockModalConfig({ isOpen: false, mode: 'verify', targetPartner: null, onVerified: null });
             if (cb) cb();
@@ -3700,6 +3709,7 @@ export const ChatBox = () => {
       {/* Custom Nickname Editor Modal */}
       {nicknameModalTarget && (
         <NicknameModal
+          isOpen={true}
           targetUser={nicknameModalTarget}
           currentNickname={nicknames[nicknameModalTarget._id]}
           onSave={handleSaveNickname}

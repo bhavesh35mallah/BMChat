@@ -13,7 +13,7 @@ router.use(protect);
 
 router.get('/', getAllStatuses);
 router.post('/', createStatus);
-router.post('/:id/view', viewStatus);
+router.route('/:id/view').post(viewStatus).put(viewStatus);
 router.delete('/:id', deleteStatus);
 
 export default router;
