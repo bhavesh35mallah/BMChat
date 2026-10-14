@@ -673,6 +673,15 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Relay Screen Sharing state between call peers
+  socket.on('screen_share_status', ({ targetUserId, isSharing }) => {
+    if (onlineUsers.has(targetUserId)) {
+      onlineUsers.get(targetUserId).forEach((sId) => {
+        io.to(sId).emit('remote_screen_share_status', { isSharing });
+      });
+    }
+  });
+
   // Disconnect handling with lastSeen update
   socket.on('disconnect', async () => {
     if (authenticatedUserId && onlineUsers.has(authenticatedUserId)) {

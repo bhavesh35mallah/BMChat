@@ -29,6 +29,7 @@ export const SocketProvider = ({ children }) => {
   const [callRejected, setCallRejected] = useState(null);
   const [callEnded, setCallEnded] = useState(null);
   const [iceCandidateReceived, setIceCandidateReceived] = useState(null);
+  const [remoteScreenShare, setRemoteScreenShare] = useState(false);
 
   const socketRef = useRef(null);
 
@@ -126,14 +127,20 @@ export const SocketProvider = ({ children }) => {
 
       newSocket.on('call_rejected', () => {
         setCallRejected(Date.now());
+        setRemoteScreenShare(false);
       });
 
       newSocket.on('call_ended', () => {
         setCallEnded(Date.now());
+        setRemoteScreenShare(false);
       });
 
       newSocket.on('receive_ice_candidate', ({ candidate }) => {
         setIceCandidateReceived({ candidate, timestamp: Date.now() });
+      });
+
+      newSocket.on('remote_screen_share_status', ({ isSharing }) => {
+        setRemoteScreenShare(!!isSharing);
       });
 
       return () => {
@@ -257,8 +264,14 @@ export const SocketProvider = ({ children }) => {
     socketRef.current.emit('send_ice_candidate', { targetUserId, candidate });
   };
 
+  const sendScreenShareStatus = ({ targetUserId, isSharing }) => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('screen_share_status', { targetUserId, isSharing });
+  };
+
   const clearIncomingCall = () => {
     setIncomingCall(null);
+    setRemoteScreenShare(false);
   };
 
   // Send typing notification
@@ -417,11 +430,13 @@ export const SocketProvider = ({ children }) => {
         callRejected,
         callEnded,
         iceCandidateReceived,
+        remoteScreenShare,
         callUser,
         answerCall,
         rejectCall,
         endCall,
         sendIceCandidate,
+        sendScreenShareStatus,
         clearIncomingCall,
       }}
     >

@@ -203,11 +203,13 @@ export const CallModal = ({
     callRejected,
     callEnded,
     iceCandidateReceived,
+    remoteScreenShare,
     callUser,
     answerCall,
     rejectCall,
     endCall,
     sendIceCandidate,
+    sendScreenShareStatus,
     clearIncomingCall,
   } = useSocket();
 
@@ -277,11 +279,21 @@ export const CallModal = ({
     };
 
     pc.ontrack = (event) => {
+      console.log('WebRTC ontrack received:', event.track?.kind);
       if (event.streams && event.streams[0]) {
         remoteStreamRef.current = event.streams[0];
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = event.streams[0];
+      } else if (event.track) {
+        if (!remoteStreamRef.current) {
+          remoteStreamRef.current = new MediaStream();
         }
+        if (!remoteStreamRef.current.getTracks().some((t) => t.id === event.track.id)) {
+          remoteStreamRef.current.addTrack(event.track);
+        }
+      }
+
+      if (remoteVideoRef.current && remoteStreamRef.current) {
+        remoteVideoRef.current.srcObject = remoteStreamRef.current;
+        remoteVideoRef.current.play().catch(() => {});
       }
     };
 
@@ -339,6 +351,12 @@ export const CallModal = ({
 
           const pc = createPeerConnection(partner._id);
           stream.getTracks().forEach((track) => pc.addTrack(track, stream));
+
+          // Ensure video transceiver is available for screen share even if call starts audio-only
+          const hasVideoSender = pc.getSenders().some((s) => s.track && s.track.kind === 'video');
+          if (!hasVideoSender && pc.addTransceiver) {
+            pc.addTransceiver('video', { direction: 'sendrecv' });
+          }
 
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
@@ -438,6 +456,12 @@ export const CallModal = ({
       const pc = createPeerConnection(incomingCall.callerId);
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
+      // Ensure video transceiver is available for screen share even if call starts audio-only
+      const hasVideoSender = pc.getSenders().some((s) => s.track && s.track.kind === 'video');
+      if (!hasVideoSender && pc.addTransceiver) {
+        pc.addTransceiver('video', { direction: 'sendrecv' });
+      }
+
       await pc.setRemoteDescription(new RTCSessionDescription(incomingCall.offer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
@@ -469,6 +493,9 @@ export const CallModal = ({
     audioEffects.stop();
     audioEffects.playEnd();
     if (partnerInfo?.id) {
+      if (isScreenSharing) {
+        sendScreenShareStatus({ targetUserId: partnerInfo.id, isSharing: false });
+      }
       endCall({ targetUserId: partnerInfo.id });
     }
     cleanupCall();
@@ -497,55 +524,111 @@ export const CallModal = ({
     }
   };
 
-  const handleToggleScreenShare = async () => {
+  const stopScreenShare = async () => {
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach((track) => track.stop());
+      screenStreamRef.current = null;
+    }
+
+    // Restore camera video track in peer connection
+    if (pcRef.current) {
+      const videoSender =
+        pcRef.current.getSenders().find((s) => s.track && s.track.kind === 'video') ||
+        pcRef.current.getSenders().find((s) => !s.track || s.track.kind !== 'audio');
+
+      const originalVideoTrack = localStreamRef.current
+        ? localStreamRef.current.getVideoTracks()[0]
+        : null;
+
+      if (videoSender) {
+        if (originalVideoTrack && !isVideoDisabled) {
+          await videoSender.replaceTrack(originalVideoTrack);
+        } else {
+          await videoSender.replaceTrack(null);
+        }
+      }
+    }
+
+    // Restore local video preview to camera stream
+    if (localVideoRef.current && localStreamRef.current) {
+      localVideoRef.current.srcObject = localStreamRef.current;
+    }
+
+    setIsScreenSharing(false);
+    showToast?.('Screen sharing stopped');
+
+    if (partnerInfo?.id) {
+      sendScreenShareStatus({ targetUserId: partnerInfo.id, isSharing: false });
+    }
+  };
+
+  const startScreenShare = async () => {
+    if (!navigator.mediaDevices?.getDisplayMedia) {
+      showToast?.('Screen sharing is not supported in this browser or device');
+      return;
+    }
+
+    try {
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({
+        video: {
+          cursor: 'always',
+          displaySurface: 'monitor',
+        },
+        audio: false,
+      });
+
+      screenStreamRef.current = screenStream;
+      const screenVideoTrack = screenStream.getVideoTracks()[0];
+      if (!screenVideoTrack) {
+        showToast?.('No screen video track captured');
+        return;
+      }
+
+      // Replace or add video track in RTCPeerConnection
+      if (pcRef.current) {
+        let videoSender =
+          pcRef.current.getSenders().find((s) => s.track && s.track.kind === 'video') ||
+          pcRef.current.getSenders().find((s) => !s.track || s.track.kind !== 'audio');
+
+        if (videoSender) {
+          await videoSender.replaceTrack(screenVideoTrack);
+        } else {
+          pcRef.current.addTrack(screenVideoTrack, screenStream);
+        }
+      }
+
+      // Update local preview
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = screenStream;
+        localVideoRef.current.play().catch(() => {});
+      }
+
+      setIsScreenSharing(true);
+      showToast?.('Screen sharing active');
+
+      if (partnerInfo?.id) {
+        sendScreenShareStatus({ targetUserId: partnerInfo.id, isSharing: true });
+      }
+
+      // Listen for browser's native "Stop sharing" bar
+      screenVideoTrack.onended = () => {
+        stopScreenShare();
+      };
+    } catch (err) {
+      if (err.name === 'NotAllowedError') {
+        console.log('Screen sharing cancelled by user');
+      } else {
+        console.error('Screen share error:', err);
+        showToast?.('Failed to start screen sharing');
+      }
+    }
+  };
+
+  const handleToggleScreenShare = () => {
     if (isScreenSharing) {
-      if (screenStreamRef.current) {
-        screenStreamRef.current.getTracks().forEach((track) => track.stop());
-        screenStreamRef.current = null;
-      }
-      if (localStreamRef.current && pcRef.current) {
-        const videoTrack = localStreamRef.current.getVideoTracks()[0];
-        const sender = pcRef.current.getSenders().find((s) => s.track && s.track.kind === 'video');
-        if (sender && videoTrack) {
-          sender.replaceTrack(videoTrack);
-        }
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = localStreamRef.current;
-        }
-      }
-      setIsScreenSharing(false);
-      showToast?.('Screen sharing stopped');
+      stopScreenShare();
     } else {
-      try {
-        if (!navigator.mediaDevices?.getDisplayMedia) {
-          showToast?.('Screen sharing is not supported in this browser');
-          return;
-        }
-        const screenStream = await navigator.mediaDevices.getDisplayMedia({
-          video: { cursor: 'always' },
-          audio: false,
-        });
-        screenStreamRef.current = screenStream;
-
-        const screenVideoTrack = screenStream.getVideoTracks()[0];
-        if (pcRef.current) {
-          const sender = pcRef.current.getSenders().find((s) => s.track && s.track.kind === 'video');
-          if (sender) {
-            sender.replaceTrack(screenVideoTrack);
-          }
-        }
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = screenStream;
-        }
-        setIsScreenSharing(true);
-        showToast?.('Screen sharing active');
-
-        screenVideoTrack.onended = () => {
-          handleToggleScreenShare();
-        };
-      } catch (err) {
-        console.warn('Screen share cancelled or failed:', err);
-      }
+      startScreenShare();
     }
   };
 
@@ -562,6 +645,10 @@ export const CallModal = ({
 
   if (callStatus === 'idle') return null;
 
+  const showVideoViewport =
+    (callType === 'video' || remoteScreenShare || isScreenSharing) &&
+    callStatus === 'connected';
+
   return (
     <div className="call-modal-backdrop">
       <div
@@ -572,8 +659,20 @@ export const CallModal = ({
         <div className="call-header-bar">
           <div className="call-header-left">
             <span className="call-type-badge">
-              {callType === 'video' ? <IconVideo size={14} /> : <IconPhone size={14} />}
-              <span>{callType === 'video' ? 'Video Call' : 'Voice Call'}</span>
+              {callType === 'video' || remoteScreenShare || isScreenSharing ? (
+                <IconVideo size={14} />
+              ) : (
+                <IconPhone size={14} />
+              )}
+              <span>
+                {remoteScreenShare
+                  ? 'Screen Presentation'
+                  : isScreenSharing
+                  ? 'Presenting Screen'
+                  : callType === 'video'
+                  ? 'Video Call'
+                  : 'Voice Call'}
+              </span>
             </span>
             {callStatus === 'connected' && (
               <span className="call-timer-badge">{formatDuration(callDuration)}</span>
@@ -594,18 +693,46 @@ export const CallModal = ({
         <div className="call-viewport-area">
           {/* Remote Media Viewport */}
           <div className="remote-media-container">
-            {callType === 'video' && callStatus === 'connected' ? (
-              <video
-                ref={(el) => {
-                  remoteVideoRef.current = el;
-                  if (el && remoteStreamRef.current && el.srcObject !== remoteStreamRef.current) {
-                    el.srcObject = remoteStreamRef.current;
-                  }
-                }}
-                autoPlay
-                playsInline
-                className="remote-video-feed"
-              />
+            {showVideoViewport ? (
+              <>
+                <video
+                  ref={(el) => {
+                    remoteVideoRef.current = el;
+                    if (el && remoteStreamRef.current && el.srcObject !== remoteStreamRef.current) {
+                      el.srcObject = remoteStreamRef.current;
+                    }
+                  }}
+                  autoPlay
+                  playsInline
+                  className={`remote-video-feed ${remoteScreenShare ? 'is-screen-share' : ''}`}
+                />
+
+                {remoteScreenShare && (
+                  <div className="screen-share-presenting-pill">
+                    <IconScreenShare size={14} />
+                    <span>{partnerInfo?.name || 'Partner'} is sharing screen</span>
+                  </div>
+                )}
+
+                {isScreenSharing && !remoteScreenShare && (
+                  <div className="screen-share-active-banner">
+                    <div className="screen-share-banner-content">
+                      <div className="screen-share-icon-glow">
+                        <IconScreenShare size={28} />
+                      </div>
+                      <h4>You are sharing your screen</h4>
+                      <p>Your screen is currently visible to {partnerInfo?.name || 'the participant'}.</p>
+                      <button
+                        type="button"
+                        className="btn-stop-share-pill"
+                        onClick={stopScreenShare}
+                      >
+                        Stop Sharing
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="call-avatar-placeholder">
                 <div className={`call-avatar-large ${callStatus !== 'connected' ? 'pulse-ring' : ''}`}>
@@ -634,21 +761,31 @@ export const CallModal = ({
           </div>
 
           {/* Local Video PIP */}
-          {callType === 'video' && (
-            <div className="local-video-pip">
+          {(callType === 'video' || isScreenSharing) && (
+            <div className={`local-video-pip ${isScreenSharing ? 'is-sharing-pip' : ''}`}>
               <video
                 ref={(el) => {
                   localVideoRef.current = el;
-                  if (el && localStreamRef.current && el.srcObject !== localStreamRef.current) {
-                    el.srcObject = localStreamRef.current;
+                  const currentSrc = isScreenSharing
+                    ? screenStreamRef.current
+                    : localStreamRef.current;
+                  if (el && currentSrc && el.srcObject !== currentSrc) {
+                    el.srcObject = currentSrc;
                   }
                 }}
                 autoPlay
                 muted
                 playsInline
-                className={`local-video-feed ${isVideoDisabled ? 'hidden-feed' : ''}`}
+                className={`local-video-feed ${isScreenSharing ? 'is-screen-share' : ''} ${
+                  isVideoDisabled && !isScreenSharing ? 'hidden-feed' : ''
+                }`}
               />
-              {isVideoDisabled && (
+              {isScreenSharing && (
+                <div className="local-pip-badge">
+                  <span>Your Screen</span>
+                </div>
+              )}
+              {isVideoDisabled && !isScreenSharing && (
                 <div className="video-disabled-cover">
                   <IconVideoOff size={20} />
                   <span>Camera Off</span>
