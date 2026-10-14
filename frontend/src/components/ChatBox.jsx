@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { authAPI, chatAPI, groupAPI } from '../services/api';
@@ -201,7 +201,8 @@ export const ChatBox = () => {
       if (res.success && res.users) {
         setUsersList(res.users);
         if (!activePartner && !activeGroup && res.users.length > 0 && window.innerWidth > 768) {
-          setActivePartner(res.users[0]);
+          const defaultPartner = res.users.find((u) => u._id !== user?._id) || res.users[0];
+          setActivePartner(defaultPartner);
         }
       }
     } catch (err) {
@@ -472,7 +473,7 @@ export const ChatBox = () => {
   const handleInputChange = (e) => {
     setInputText(e.target.value);
 
-    if (activePartner?._id) {
+    if (activePartner?._id && activePartner._id !== user?._id) {
       sendTypingStatus(activePartner._id, true);
 
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
@@ -950,7 +951,7 @@ export const ChatBox = () => {
     setAttachedFile(null);
     setReplyingTo(null);
     setShowEmojiPicker(false);
-    if (activePartner?._id) {
+    if (activePartner?._id && activePartner._id !== user?._id) {
       sendTypingStatus(activePartner._id, false);
     }
 
@@ -1239,8 +1240,29 @@ export const ChatBox = () => {
     setReplyingTo(null);
   };
 
+  // Ensure current user is included and positioned at the top like WhatsApp/Slack "Message yourself"
+  const sortedUsersList = useMemo(() => {
+    let list = [...usersList];
+    if (user && !list.some((u) => u._id === user._id)) {
+      list.unshift({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        avatar: user.avatar,
+        bio: user.bio || 'Message yourself',
+      });
+    } else if (user) {
+      const selfIndex = list.findIndex((u) => u._id === user._id);
+      if (selfIndex > 0) {
+        const [selfUser] = list.splice(selfIndex, 1);
+        list.unshift(selfUser);
+      }
+    }
+    return list;
+  }, [usersList, user]);
+
   // Filter contacts by sidebar search
-  const filteredUsers = usersList.filter(
+  const filteredUsers = sortedUsersList.filter(
     (u) =>
       u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       u.email?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -1347,7 +1369,10 @@ export const ChatBox = () => {
                     }`}
                   />
                 </div>
-                <h2 className="profile-hero-name">{activePartner.name}</h2>
+                <h2 className="profile-hero-name">
+                  {activePartner.name}
+                  {activePartner._id === user?._id && <span className="you-badge">(You)</span>}
+                </h2>
                 <div className="profile-hero-status">
                   {isUserOnline(activePartner._id) ? (
                     <span className="text-success font-medium">● Active now</span>
@@ -1532,7 +1557,10 @@ export const ChatBox = () => {
                           contact.name?.charAt(0).toUpperCase()
                         )}
                       </div>
-                      <span className="forward-contact-name">{contact.name}</span>
+                      <span className="forward-contact-name">
+                        {contact.name}
+                        {contact._id === user?._id && <span className="you-badge">(You)</span>}
+                      </span>
                     </div>
                     <button
                       type="button"
@@ -1612,14 +1640,15 @@ export const ChatBox = () => {
               </div>
             ) : (
               filteredUsers.map((u) => {
-                const online = isUserOnline(u._id);
+                const isSelf = u._id === user?._id;
+                const online = isSelf ? true : isUserOnline(u._id);
                 const isSelected = activePartner?._id === u._id && !activeGroup;
                 const unread = unreadCounts[u._id] || 0;
 
                 return (
                   <div
                     key={u._id}
-                    className={`user-contact-item ${isSelected ? 'selected' : ''}`}
+                    className={`user-contact-item ${isSelected ? 'selected' : ''} ${isSelf ? 'self-contact-item' : ''}`}
                     onClick={() => handleSelectPartner(u)}
                   >
                     <div className="avatar-wrapper">
@@ -1635,16 +1664,21 @@ export const ChatBox = () => {
 
                     <div className="contact-info">
                       <div className="contact-name-row">
-                        <span className="contact-name">{u.name}</span>
+                        <span className="contact-name">
+                          {u.name}
+                          {isSelf && <span className="you-badge">(You)</span>}
+                        </span>
                         {unread > 0 ? (
                           <span className="unread-counter-badge">{unread}</span>
                         ) : (
                           <span className="contact-status-text">
-                            {online ? 'Online' : formatLastSeen(u.lastSeen)}
+                            {isSelf ? 'Online' : (online ? 'Online' : formatLastSeen(u.lastSeen))}
                           </span>
                         )}
                       </div>
-                      <p className="contact-bio-snippet">{u.bio || u.email}</p>
+                      <p className="contact-bio-snippet">
+                        {isSelf && !u.bio ? 'Message yourself • Personal cloud notes' : (u.bio || u.email)}
+                      </p>
                     </div>
                   </div>
                 );
@@ -1793,12 +1827,17 @@ export const ChatBox = () => {
                   <div>
                     <div className="active-partner-name">
                       <span>{activePartner.name}</span>
+                      {activePartner._id === user?._id && (
+                        <span className="you-badge">(You)</span>
+                      )}
                       <span className="view-profile-hint">
                         <IconInfo size={14} />
                       </span>
                     </div>
                     <div className="active-partner-sub">
-                      {isPartnerTyping ? (
+                      {activePartner._id === user?._id ? (
+                        <span className="text-muted">Message yourself • Notes, media & cloud files</span>
+                      ) : isPartnerTyping ? (
                         <span className="typing-text">typing a message...</span>
                       ) : isUserOnline(activePartner._id) ? (
                         <span className="text-success font-medium">● Active now</span>
@@ -1826,7 +1865,7 @@ export const ChatBox = () => {
                 )}
 
                 {/* WebRTC 1-on-1 Voice & Video Calling */}
-                {activePartner && (
+                {activePartner && activePartner._id !== user?._id && (
                   <>
                     <button
                       type="button"
@@ -2972,7 +3011,7 @@ export const ChatBox = () => {
       <CreateGroupModal
         isOpen={showCreateGroupModal}
         onClose={() => setShowCreateGroupModal(false)}
-        users={usersList}
+        users={usersList.filter((u) => u._id !== user?._id)}
         token={token}
         onGroupCreated={(newGroup) => {
           setGroupsList((prev) => [newGroup, ...prev]);

@@ -533,12 +533,12 @@ export const updateProfile = async (req, res) => {
   }
 };
 
-// @desc    Get list of all users to chat with (excluding current user)
+// @desc    Get list of all users to chat with (including current user for note-to-self)
 // @route   GET /api/auth/users
 // @access  Private
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find({ _id: { $ne: req.user._id } })
+    const users = await User.find({})
       .select('name email avatar bio lastSeen createdAt')
       .sort({ createdAt: -1 });
 
