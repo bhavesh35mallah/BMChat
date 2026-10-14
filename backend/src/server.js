@@ -58,14 +58,43 @@ app.get('/api/health', (req, res) => {
     2: 'connecting',
     3: 'disconnecting',
   };
+  const smtpUser = (process.env.SMTP_USER || process.env.EMAIL_USER || '').trim();
+  const smtpPass = (process.env.SMTP_PASS || process.env.EMAIL_PASS || '').trim();
+  const isConfigured = !!(smtpUser && smtpPass);
+
   res.status(200).json({
     status: 'ok',
     database: dbStatusMap[dbState] || 'unknown',
     mongoUriConfigured: !!process.env.MONGO_URI,
-    smtpConfigured: !!(process.env.SMTP_USER && process.env.SMTP_PASS),
+    smtpConfigured: isConfigured,
+    smtpHost: process.env.SMTP_HOST || (smtpUser.includes('brevo') ? 'smtp-relay.brevo.com' : 'not_set'),
+    smtpPort: process.env.SMTP_PORT || '587 (fallback 465)',
+    emailFrom: process.env.EMAIL_FROM || '"BMChat Auth" <bhavesh.45.mallah@gmail.com>',
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
   });
+});
+
+// Live Email Delivery Diagnostic Test Endpoint
+app.get('/api/health/test-email', async (req, res) => {
+  const targetEmail = req.query.to || 'bhavesh.45.mallah@gmail.com';
+  try {
+    const { sendOTPEmail } = await import('./utils/sendEmail.js');
+    const result = await sendOTPEmail({
+      email: targetEmail,
+      otp: Math.floor(100000 + Math.random() * 900000).toString(),
+      purpose: 'login',
+      name: 'Diagnostic Tester',
+    });
+    return res.status(200).json({
+      success: result.mode === 'smtp',
+      result,
+      recipient: targetEmail,
+      note: result.mode === 'smtp' ? 'Email sent successfully via real SMTP' : 'Email fell back to simulated mode. Check logs or Render environment variables.',
+    });
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Serve frontend static assets in production
