@@ -60,16 +60,20 @@ app.get('/api/health', (req, res) => {
   };
   const smtpUser = (process.env.SMTP_USER || process.env.EMAIL_USER || '').trim();
   const smtpPass = (process.env.SMTP_PASS || process.env.EMAIL_PASS || '').trim();
-  const isConfigured = !!(smtpUser && smtpPass);
+  const brevoApiKey = (process.env.BREVO_API_KEY || (smtpPass.startsWith('xkeysib-') ? smtpPass : '')).trim();
+  const resendApiKey = (process.env.RESEND_API_KEY || '').trim();
+  const isConfigured = !!(smtpUser && smtpPass) || !!brevoApiKey || !!resendApiKey;
 
   res.status(200).json({
     status: 'ok',
     database: dbStatusMap[dbState] || 'unknown',
     mongoUriConfigured: !!process.env.MONGO_URI,
-    smtpConfigured: isConfigured,
+    emailConfigured: isConfigured,
+    brevoApiConfigured: !!brevoApiKey,
+    smtpConfigured: !!(smtpUser && smtpPass),
     smtpHost: process.env.SMTP_HOST || (smtpUser.includes('brevo') ? 'smtp-relay.brevo.com' : 'not_set'),
-    smtpPort: process.env.SMTP_PORT || '587 (fallback 465)',
     emailFrom: process.env.EMAIL_FROM || '"BMChat Auth" <bhavesh.45.mallah@gmail.com>',
+    renderFreeTierNote: 'Render Free tier blocks raw SMTP ports 587 and 465. Add BREVO_API_KEY (from Brevo -> SMTP & API -> API Keys) in Render Environment to send via HTTPS Port 443 with zero blocking.',
     environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
   });
