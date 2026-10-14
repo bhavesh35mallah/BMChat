@@ -166,4 +166,22 @@ export const groupAPI = {
     request(API_GROUPS, `/${groupId}`, { method: 'DELETE', token }),
 };
 
+const API_STATUS = '/api/status';
 
+export const statusAPI = {
+  // Get all active statuses
+  getStatuses: (token) =>
+    request(API_STATUS, '', { method: 'GET', token }),
+
+  // Create a new status update
+  createStatus: (token, data) =>
+    request(API_STATUS, '', { method: 'POST', token, data }),
+
+  // Mark status as viewed
+  viewStatus: (token, statusId) =>
+    request(API_STATUS, `/${statusId}/view`, { method: 'PUT', token }),
+
+  // Delete status
+  deleteStatus: (token, statusId) =>
+    request(API_STATUS, `/${statusId}`, { method: 'DELETE', token }),
+};

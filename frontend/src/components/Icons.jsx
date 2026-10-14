@@ -410,3 +410,39 @@ export const IconRefresh = ({ size = 18, className = '' }) => (
     <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
   </svg>
 );
+
+export const IconArchive = ({ size = 18, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <polyline points="21 8 21 21 3 21 3 8"></polyline>
+    <rect x="1" y="3" width="22" height="5"></rect>
+    <line x1="10" y1="12" x2="14" y2="12"></line>
+  </svg>
+);
+
+export const IconUnlock = ({ size = 18, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+    <path d="M7 11V7a5 5 0 0 1 9.9-1"></path>
+  </svg>
+);
+
+export const IconPencil = ({ size = 18, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+  </svg>
+);
+
+export const IconCircleDashed = ({ size = 18, className = '' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M10.1 2.182a10 10 0 0 1 3.8 0"></path>
+    <path d="M17.6 3.71a10 10 0 0 1 2.69 2.7"></path>
+    <path d="M21.82 10.1a10 10 0 0 1 0 3.8"></path>
+    <path d="M20.29 17.6a10 10 0 0 1-2.7 2.69"></path>
+    <path d="M13.9 21.82a10 10 0 0 1-3.8 0"></path>
+    <path d="M6.4 20.29a10 10 0 0 1-2.69-2.7"></path>
+    <path d="M2.18 13.9a10 10 0 0 1 0-3.8"></path>
+    <path d="M3.71 6.4a10 10 0 0 1 2.7-2.69"></path>
+  </svg>
+);
+
+

@@ -11,6 +11,7 @@ import { connectDB } from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import groupRoutes from './routes/groupRoutes.js';
+import statusRoutes from './routes/statusRoutes.js';
 import { Message } from './models/Message.js';
 import { User } from './models/User.js';
 import { Group } from './models/Group.js';
@@ -48,6 +49,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/groups', groupRoutes);
+app.use('/api/status', statusRoutes);
 
 // Health check and diagnostics endpoint
 app.get('/api/health', (req, res) => {
@@ -684,6 +686,11 @@ io.on('connection', (socket) => {
         io.to(sId).emit('remote_screen_share_status', { isSharing });
       });
     }
+  });
+
+  // Relay New Status posted to all clients
+  socket.on('status_posted', (statusData) => {
+    io.emit('new_status_available', statusData);
   });
 
   // Disconnect handling with lastSeen update

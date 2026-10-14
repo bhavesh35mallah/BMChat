@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
-import { authAPI, chatAPI, groupAPI } from '../services/api';
+import { authAPI, chatAPI, groupAPI, statusAPI } from '../services/api';
 import { EmojiPicker } from './EmojiPicker';
 import { playNotificationChime } from '../utils/sound';
 import { CallModal } from './CallModal';
@@ -9,6 +9,10 @@ import { CreateGroupModal } from './CreateGroupModal';
 import { CreatePollModal } from './CreatePollModal';
 import { CodeSnippetModal } from './CodeSnippetModal';
 import { GroupInfoDrawer } from './GroupInfoDrawer';
+import { StatusViewerModal } from './StatusViewerModal';
+import { StatusCreatorModal } from './StatusCreatorModal';
+import { ChatLockModal } from './ChatLockModal';
+import { NicknameModal } from './NicknameModal';
 import {
   IconSend,
   IconMic,
@@ -43,6 +47,11 @@ import {
   IconDownload,
   IconFileText,
   IconUser,
+  IconArchive,
+  IconLock,
+  IconUnlock,
+  IconPencil,
+  IconCircleDashed,
 } from './Icons';
 
 const QUICK_REACTIONS = ['❤️', '👍', '🔥', '😂', '🎉'];
@@ -110,15 +119,55 @@ export const ChatBox = () => {
     editMessage,
     votePoll,
     playGameMove,
+    newStatusUpdate,
+    broadcastStatus,
   } = useSocket();
 
   const [usersList, setUsersList] = useState([]);
   const [activePartner, setActivePartner] = useState(null);
   const [groupsList, setGroupsList] = useState([]);
   const [activeGroup, setActiveGroup] = useState(null);
-  const [sidebarTab, setSidebarTab] = useState('direct'); // 'direct' | 'groups'
+  const [sidebarTab, setSidebarTab] = useState('direct'); // 'direct' | 'groups' | 'status'
   const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
   const [outgoingCallSession, setOutgoingCallSession] = useState(null); // { partner, callType }
+
+  // Status Feature States
+  const [statusesList, setStatusesList] = useState([]);
+  const [selectedStatusGroup, setSelectedStatusGroup] = useState(null);
+  const [showStatusCreator, setShowStatusCreator] = useState(false);
+
+  // Chat Lock Feature States (per-user in localStorage)
+  const [chatLockPin, setChatLockPin] = useState(() => localStorage.getItem(`chat_lock_pin_${user?._id}`) || '');
+  const [lockedChatIds, setLockedChatIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`chat_locked_ids_${user?._id}`) || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [unlockedChatIds, setUnlockedChatIds] = useState(() => new Set());
+  const [lockModalConfig, setLockModalConfig] = useState({ isOpen: false, mode: 'verify', targetPartner: null, onVerified: null });
+
+  // Archived Chats Feature States (per-user in localStorage)
+  const [archivedChatIds, setArchivedChatIds] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`chat_archived_ids_${user?._id}`) || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [showArchivedOnly, setShowArchivedOnly] = useState(false);
+
+  // Nicknames Feature States (per-user in localStorage)
+  const [nicknames, setNicknames] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`chat_nicknames_${user?._id}`) || '{}');
+    } catch {
+      return {};
+    }
+  });
+  const [nicknameModalTarget, setNicknameModalTarget] = useState(null);
+
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [attachedImage, setAttachedImage] = useState(null);
@@ -224,12 +273,196 @@ export const ChatBox = () => {
     }
   };
 
+  // Fetch all active statuses
+  const fetchStatuses = async () => {
+    if (!token) return;
+    try {
+      const res = await statusAPI.getStatuses(token);
+      if (res.success && res.statuses) {
+        setStatusesList(res.statuses);
+      }
+    } catch (err) {
+      console.warn('Failed to load statuses:', err);
+    }
+  };
+
   useEffect(() => {
     if (token) {
       loadUsers();
       loadGroups();
+      fetchStatuses();
     }
   }, [token]);
+
+  // Refresh statuses on realtime broadcast
+  useEffect(() => {
+    if (newStatusUpdate && token) {
+      fetchStatuses();
+    }
+  }, [newStatusUpdate, token]);
+
+  // Status Handlers
+  const handleViewStatus = async (statusId) => {
+    if (!token || !statusId) return;
+    try {
+      await statusAPI.viewStatus(token, statusId);
+      setStatusesList((prev) =>
+        prev.map((group) => {
+          const updatedStatuses = group.statuses.map((st) =>
+            st._id === statusId ? { ...st, viewers: [...(st.viewers || []), user?._id] } : st
+          );
+          return {
+            ...group,
+            statuses: updatedStatuses,
+            hasUnviewed: updatedStatuses.some((st) => !st.viewers?.includes(user?._id)),
+          };
+        })
+      );
+    } catch (err) {
+      console.warn('Failed to mark status viewed:', err);
+    }
+  };
+
+  const handleDeleteStatus = async (statusId) => {
+    if (!token || !statusId) return;
+    try {
+      await statusAPI.deleteStatus(token, statusId);
+      showToast('Status deleted');
+      fetchStatuses();
+      if (broadcastStatus) broadcastStatus();
+    } catch (err) {
+      showToast('Failed to delete status');
+    }
+  };
+
+  const handleStatusCreated = () => {
+    fetchStatuses();
+    if (broadcastStatus) broadcastStatus();
+    showToast('Status update published!');
+  };
+
+  const handleReplyToStatus = (contactUser, replySnippet) => {
+    setSelectedStatusGroup(null);
+    handleSelectPartnerSafe(contactUser);
+    setInputText(`Replying to story: "${replySnippet}" `);
+  };
+
+  // Nickname Helpers
+  const getDisplayName = (targetUser) => {
+    if (!targetUser) return '';
+    return nicknames[targetUser._id] || targetUser.name || 'User';
+  };
+
+  const handleSaveNickname = (userId, newNickname) => {
+    const updated = { ...nicknames };
+    if (newNickname && newNickname.trim()) {
+      updated[userId] = newNickname.trim();
+    } else {
+      delete updated[userId];
+    }
+    setNicknames(updated);
+    if (user?._id) {
+      localStorage.setItem(`chat_nicknames_${user._id}`, JSON.stringify(updated));
+    }
+    showToast(newNickname ? 'Nickname saved' : 'Nickname reset to real name');
+  };
+
+  // Chat Lock Helpers
+  const handleSavePin = (newPin) => {
+    setChatLockPin(newPin);
+    if (user?._id) {
+      localStorage.setItem(`chat_lock_pin_${user._id}`, newPin);
+    }
+    showToast('Chat Lock PIN saved');
+  };
+
+  const handleToggleLock = (partner) => {
+    if (!partner?._id) return;
+    const isLocked = lockedChatIds.includes(partner._id);
+
+    if (!chatLockPin) {
+      // Need to set PIN first
+      setLockModalConfig({
+        isOpen: true,
+        mode: 'set_pin',
+        targetPartner: partner,
+        onVerified: () => {
+          const next = [...lockedChatIds, partner._id];
+          setLockedChatIds(next);
+          if (user?._id) {
+            localStorage.setItem(`chat_locked_ids_${user._id}`, JSON.stringify(next));
+          }
+          setUnlockedChatIds((prev) => new Set([...prev, partner._id]));
+          showToast(`Chat with ${getDisplayName(partner)} locked`);
+        },
+      });
+      return;
+    }
+
+    if (isLocked) {
+      // Require PIN verification before unlocking
+      setLockModalConfig({
+        isOpen: true,
+        mode: 'verify',
+        targetPartner: partner,
+        onVerified: () => {
+          const next = lockedChatIds.filter((id) => id !== partner._id);
+          setLockedChatIds(next);
+          if (user?._id) {
+            localStorage.setItem(`chat_locked_ids_${user._id}`, JSON.stringify(next));
+          }
+          showToast(`Chat with ${getDisplayName(partner)} unlocked`);
+        },
+      });
+    } else {
+      const next = [...lockedChatIds, partner._id];
+      setLockedChatIds(next);
+      if (user?._id) {
+        localStorage.setItem(`chat_locked_ids_${user._id}`, JSON.stringify(next));
+      }
+      setUnlockedChatIds((prev) => new Set([...prev, partner._id]));
+      showToast(`Chat with ${getDisplayName(partner)} locked`);
+    }
+  };
+
+  const handleSelectPartnerSafe = (u) => {
+    const isLocked = lockedChatIds.includes(u._id);
+    const isUnlocked = unlockedChatIds.has(u._id);
+
+    if (isLocked && !isUnlocked) {
+      setLockModalConfig({
+        isOpen: true,
+        mode: chatLockPin ? 'verify' : 'set_pin',
+        targetPartner: u,
+        onVerified: () => {
+          setUnlockedChatIds((prev) => new Set([...prev, u._id]));
+          handleSelectPartner(u);
+        },
+      });
+      return;
+    }
+
+    handleSelectPartner(u);
+  };
+
+  // Archive Chat Helpers
+  const handleToggleArchive = (partnerId) => {
+    if (!partnerId) return;
+    const isArchived = archivedChatIds.includes(partnerId);
+    let next;
+    if (isArchived) {
+      next = archivedChatIds.filter((id) => id !== partnerId);
+      showToast('Chat unarchived');
+    } else {
+      next = [...archivedChatIds, partnerId];
+      showToast('Chat archived');
+    }
+    setArchivedChatIds(next);
+    if (user?._id) {
+      localStorage.setItem(`chat_archived_ids_${user._id}`, JSON.stringify(next));
+    }
+  };
+
 
   // Handle Last Seen Realtime Updates
   useEffect(() => {
@@ -1261,12 +1494,34 @@ export const ChatBox = () => {
     return list;
   }, [usersList, user]);
 
-  // Filter contacts by sidebar search
-  const filteredUsers = sortedUsersList.filter(
-    (u) =>
-      u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter contacts by sidebar search (including nicknames)
+  const filteredUsers = sortedUsersList.filter((u) => {
+    const nick = nicknames[u._id] || '';
+    const q = searchQuery.toLowerCase();
+    return (
+      u.name?.toLowerCase().includes(q) ||
+      u.email?.toLowerCase().includes(q) ||
+      nick.toLowerCase().includes(q)
+    );
+  });
+
+  // Archive filtering
+  const archivedCount = useMemo(() => {
+    return usersList.filter((u) => u._id !== user?._id && archivedChatIds.includes(u._id)).length;
+  }, [usersList, archivedChatIds, user?._id]);
+
+  const displayedContacts = useMemo(() => {
+    return filteredUsers.filter((u) => {
+      if (u._id === user?._id) return !showArchivedOnly;
+      const isArchived = archivedChatIds.includes(u._id);
+      return showArchivedOnly ? isArchived : !isArchived;
+    });
+  }, [filteredUsers, archivedChatIds, showArchivedOnly, user?._id]);
+
+  // Unviewed statuses count across all other contacts
+  const unviewedStatusesCount = useMemo(() => {
+    return statusesList.filter((s) => s.user?._id !== user?._id && s.hasUnviewed).length;
+  }, [statusesList, user?._id]);
 
   // Filter groups by sidebar search
   const filteredGroups = groupsList.filter(
@@ -1589,12 +1844,15 @@ export const ChatBox = () => {
             </div>
           </div>
 
-          {/* Segmented Tabs: Direct vs Groups */}
+          {/* Segmented Tabs: Direct vs Groups vs Status */}
           <div className="sidebar-tabs">
             <button
               type="button"
               className={`sidebar-tab-btn ${sidebarTab === 'direct' ? 'active' : ''}`}
-              onClick={() => setSidebarTab('direct')}
+              onClick={() => {
+                setSidebarTab('direct');
+                setShowArchivedOnly(false);
+              }}
             >
               <IconChat size={15} />
               <span>Direct ({usersList.length})</span>
@@ -1607,18 +1865,42 @@ export const ChatBox = () => {
               <IconUsers size={15} />
               <span>Groups ({groupsList.length})</span>
             </button>
+            <button
+              type="button"
+              className={`sidebar-tab-btn ${sidebarTab === 'status' ? 'active' : ''}`}
+              onClick={() => setSidebarTab('status')}
+            >
+              <IconCircleDashed size={15} />
+              <span>Status</span>
+              {unviewedStatusesCount > 0 && (
+                <span className="status-tab-dot" title={`${unviewedStatusesCount} new status update(s)`} />
+              )}
+            </button>
           </div>
 
-          <div className="user-search-wrapper">
-            <IconSearch size={15} className="search-icon" />
-            <input
-              type="text"
-              placeholder={sidebarTab === 'direct' ? 'Search contacts...' : 'Search groups...'}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="user-search-input"
-            />
-          </div>
+          {sidebarTab !== 'status' ? (
+            <div className="user-search-wrapper">
+              <IconSearch size={15} className="search-icon" />
+              <input
+                type="text"
+                placeholder={sidebarTab === 'direct' ? 'Search contacts or nicknames...' : 'Search groups...'}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="user-search-input"
+              />
+            </div>
+          ) : (
+            <div className="status-tab-header-action">
+              <button
+                type="button"
+                className="btn-create-status-banner"
+                onClick={() => setShowStatusCreator(true)}
+              >
+                <IconPlus size={15} />
+                <span>Add New Status</span>
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="users-directory-list">
@@ -1628,63 +1910,121 @@ export const ChatBox = () => {
               <div className="users-loading">
                 <span className="spinner"></span> Loading contacts...
               </div>
-            ) : filteredUsers.length === 0 ? (
-              <div className="no-users-box">
-                <div className="no-users-icon">
-                  <IconUsers size={32} />
-                </div>
-                <p className="no-users-title">No other users found</p>
-                <p className="no-users-hint">
-                  Tip: Open an <strong>Incognito window</strong> or another browser, register a second account, and test 2-way live chat!
-                </p>
-              </div>
             ) : (
-              filteredUsers.map((u) => {
-                const isSelf = u._id === user?._id;
-                const online = isSelf ? true : isUserOnline(u._id);
-                const isSelected = activePartner?._id === u._id && !activeGroup;
-                const unread = unreadCounts[u._id] || 0;
-
-                return (
+              <>
+                {/* Archived Chats Folder Navigation Card */}
+                {!showArchivedOnly && archivedCount > 0 && (
                   <div
-                    key={u._id}
-                    className={`user-contact-item ${isSelected ? 'selected' : ''} ${isSelf ? 'self-contact-item' : ''}`}
-                    onClick={() => handleSelectPartner(u)}
+                    className="archived-folder-row"
+                    onClick={() => setShowArchivedOnly(true)}
+                    title="Open archived conversations"
                   >
-                    <div className="avatar-wrapper">
-                      {u.avatar ? (
-                        <img src={u.avatar} alt={u.name} className="contact-avatar-img" />
-                      ) : (
-                        <div className="contact-avatar-placeholder">
-                          {u.name?.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <span className={`online-indicator ${online ? 'online' : 'offline'}`} />
+                    <div className="archived-folder-icon">
+                      <IconArchive size={17} />
                     </div>
-
-                    <div className="contact-info">
-                      <div className="contact-name-row">
-                        <span className="contact-name">
-                          {u.name}
-                          {isSelf && <span className="you-badge">(You)</span>}
-                        </span>
-                        {unread > 0 ? (
-                          <span className="unread-counter-badge">{unread}</span>
-                        ) : (
-                          <span className="contact-status-text">
-                            {isSelf ? 'Online' : (online ? 'Online' : formatLastSeen(u.lastSeen))}
-                          </span>
-                        )}
-                      </div>
-                      <p className="contact-bio-snippet">
-                        {isSelf && !u.bio ? 'Message yourself • Personal cloud notes' : (u.bio || u.email)}
-                      </p>
+                    <div className="archived-folder-label">
+                      <span>Archived</span>
                     </div>
+                    <span className="archived-count-pill">{archivedCount}</span>
                   </div>
-                );
-              })
+                )}
+
+                {/* Back Banner when inside Archived folder */}
+                {showArchivedOnly && (
+                  <div
+                    className="archived-back-banner"
+                    onClick={() => setShowArchivedOnly(false)}
+                    title="Return to primary inbox"
+                  >
+                    <span className="back-arrow">‹</span>
+                    <span className="back-title">Archived Chats</span>
+                    <span className="archived-count-pill">{archivedCount}</span>
+                  </div>
+                )}
+
+                {displayedContacts.length === 0 ? (
+                  <div className="no-users-box">
+                    <div className="no-users-icon">
+                      {showArchivedOnly ? <IconArchive size={32} /> : <IconUsers size={32} />}
+                    </div>
+                    <p className="no-users-title">
+                      {showArchivedOnly ? 'No archived chats' : 'No contacts found'}
+                    </p>
+                    <p className="no-users-hint">
+                      {showArchivedOnly
+                        ? 'Archive chats you want to keep hidden or tidy from the top header.'
+                        : 'Open an Incognito tab, register another account, and test live chat!'}
+                    </p>
+                  </div>
+                ) : (
+                  displayedContacts.map((u) => {
+                    const isSelf = u._id === user?._id;
+                    const online = isSelf ? true : isUserOnline(u._id);
+                    const isSelected = activePartner?._id === u._id && !activeGroup;
+                    const unread = unreadCounts[u._id] || 0;
+                    const isLocked = lockedChatIds.includes(u._id);
+                    const customNick = nicknames[u._id];
+
+                    return (
+                      <div
+                        key={u._id}
+                        className={`user-contact-item ${isSelected ? 'selected' : ''} ${
+                          isSelf ? 'self-contact-item' : ''
+                        } ${isLocked ? 'chat-item-locked' : ''}`}
+                        onClick={() => handleSelectPartnerSafe(u)}
+                      >
+                        <div className="avatar-wrapper">
+                          {u.avatar ? (
+                            <img src={u.avatar} alt={u.name} className="contact-avatar-img" />
+                          ) : (
+                            <div className="contact-avatar-placeholder">
+                              {u.name?.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span className={`online-indicator ${online ? 'online' : 'offline'}`} />
+                        </div>
+
+                        <div className="contact-info">
+                          <div className="contact-name-row">
+                            <span className="contact-name">
+                              {customNick ? (
+                                <>
+                                  <span className="nickname-display-text">{customNick}</span>
+                                  <span className="real-name-subtitle">({u.name})</span>
+                                </>
+                              ) : (
+                                u.name
+                              )}
+                              {isSelf && <span className="you-badge">(You)</span>}
+                              {isLocked && (
+                                <span className="locked-badge-tag" title="Protected with PIN">
+                                  <IconLock size={12} />
+                                </span>
+                              )}
+                            </span>
+                            {unread > 0 ? (
+                              <span className="unread-counter-badge">{unread}</span>
+                            ) : (
+                              <span className="contact-status-text">
+                                {isSelf ? 'Online' : (online ? 'Online' : formatLastSeen(u.lastSeen))}
+                              </span>
+                            )}
+                          </div>
+                          <p className="contact-bio-snippet">
+                            {isLocked && !unlockedChatIds.has(u._id)
+                              ? '🔒 Tap with PIN to view conversation'
+                              : isSelf && !u.bio
+                              ? 'Message yourself • Personal cloud notes'
+                              : (u.bio || u.email)}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </>
             )
-          ) : (
+          ) : sidebarTab === 'groups' ? (
             /* Groups List */
             <>
               <button
@@ -1745,6 +2085,135 @@ export const ChatBox = () => {
                 })
               )}
             </>
+          ) : (
+            /* Status / Stories Section */
+            <div className="status-directory-section">
+              {/* My Status Card */}
+              {(() => {
+                const myStatusGroup = statusesList.find((s) => s.user?._id === user?._id);
+                const latestStatus = myStatusGroup?.statuses?.[myStatusGroup.statuses.length - 1];
+
+                return (
+                  <div className="status-my-item">
+                    <div
+                      className={`avatar-wrapper status-avatar-ring ${myStatusGroup ? 'has-status' : 'no-status'}`}
+                      onClick={() => {
+                        if (myStatusGroup) {
+                          setSelectedStatusGroup(myStatusGroup);
+                        } else {
+                          setShowStatusCreator(true);
+                        }
+                      }}
+                      title={myStatusGroup ? "View my status" : "Add status update"}
+                    >
+                      {user?.avatar ? (
+                        <img src={user.avatar} alt="My Status" className="contact-avatar-img" />
+                      ) : (
+                        <div className="contact-avatar-placeholder">
+                          {user?.name?.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        className="my-status-add-badge"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowStatusCreator(true);
+                        }}
+                        title="Post new status"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <div
+                      className="contact-info clickable-info"
+                      onClick={() => {
+                        if (myStatusGroup) {
+                          setSelectedStatusGroup(myStatusGroup);
+                        } else {
+                          setShowStatusCreator(true);
+                        }
+                      }}
+                    >
+                      <div className="contact-name-row">
+                        <span className="contact-name font-semibold">My Status</span>
+                      </div>
+                      <p className="contact-bio-snippet">
+                        {latestStatus
+                          ? `${formatLastSeen(latestStatus.createdAt)} • ${myStatusGroup.statuses.length} update(s)`
+                          : 'Tap to add status update (disappears in 24h)'}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div className="status-divider-title">
+                <span>Recent Updates</span>
+              </div>
+
+              {statusesList.filter((s) => s.user?._id !== user?._id).length === 0 ? (
+                <div className="no-status-box">
+                  <div className="no-status-icon">
+                    <IconCircleDashed size={36} />
+                  </div>
+                  <p className="no-status-title">No recent updates</p>
+                  <p className="no-status-desc">
+                    Stories and status updates from contacts will appear here for 24 hours.
+                  </p>
+                </div>
+              ) : (
+                statusesList
+                  .filter((s) => s.user?._id !== user?._id)
+                  .map((group) => {
+                    const latest = group.statuses?.[group.statuses.length - 1];
+                    const displayName = getDisplayName(group.user);
+
+                    return (
+                      <div
+                        key={group.user?._id}
+                        className="user-contact-item status-contact-item"
+                        onClick={() => setSelectedStatusGroup(group)}
+                      >
+                        <div
+                          className={`avatar-wrapper status-avatar-ring ${
+                            group.hasUnviewed ? 'unviewed' : 'viewed'
+                          }`}
+                        >
+                          {group.user?.avatar ? (
+                            <img
+                              src={group.user.avatar}
+                              alt={displayName}
+                              className="contact-avatar-img"
+                            />
+                          ) : (
+                            <div className="contact-avatar-placeholder">
+                              {displayName.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="contact-info">
+                          <div className="contact-name-row">
+                            <span className="contact-name">{displayName}</span>
+                            <span className="status-time-tag">
+                              {latest ? formatLastSeen(latest.createdAt) : ''}
+                            </span>
+                          </div>
+                          <p className="contact-bio-snippet">
+                            {group.hasUnviewed ? (
+                              <span className="text-unviewed font-medium">New update</span>
+                            ) : (
+                              <span>{group.statuses?.length} update(s)</span>
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })
+              )}
+            </div>
           )}
         </div>
       </div>
@@ -1826,7 +2295,20 @@ export const ChatBox = () => {
                   </div>
                   <div>
                     <div className="active-partner-name">
-                      <span>{activePartner.name}</span>
+                      <span>{getDisplayName(activePartner)}</span>
+                      {nicknames[activePartner._id] && (
+                        <span className="header-realname-sub">({activePartner.name})</span>
+                      )}
+                      {lockedChatIds.includes(activePartner._id) && (
+                        <span className="header-lock-badge" title="Chat locked with PIN">
+                          <IconLock size={13} />
+                        </span>
+                      )}
+                      {archivedChatIds.includes(activePartner._id) && (
+                        <span className="header-archive-badge" title="Chat archived">
+                          <IconArchive size={13} />
+                        </span>
+                      )}
                       {activePartner._id === user?._id && (
                         <span className="you-badge">(You)</span>
                       )}
@@ -1864,6 +2346,41 @@ export const ChatBox = () => {
                   </button>
                 )}
 
+                {/* Nickname, Chat Lock & Archive for 1-on-1 Chats */}
+                {activePartner && activePartner._id !== user?._id && (
+                  <>
+                    <button
+                      type="button"
+                      className={`chat-header-btn ${nicknames[activePartner._id] ? 'active' : ''}`}
+                      onClick={() => setNicknameModalTarget(activePartner)}
+                      title={nicknames[activePartner._id] ? `Nickname: "${nicknames[activePartner._id]}" (Click to edit)` : "Set custom nickname"}
+                      aria-label="Set Nickname"
+                    >
+                      <IconPencil size={16} />
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`chat-header-btn ${lockedChatIds.includes(activePartner._id) ? 'active' : ''}`}
+                      onClick={() => handleToggleLock(activePartner)}
+                      title={lockedChatIds.includes(activePartner._id) ? "Unlock / disable PIN protection" : "Lock chat with 4-digit PIN"}
+                      aria-label="Lock Chat"
+                    >
+                      {lockedChatIds.includes(activePartner._id) ? <IconLock size={16} /> : <IconUnlock size={16} />}
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`chat-header-btn ${archivedChatIds.includes(activePartner._id) ? 'active' : ''}`}
+                      onClick={() => handleToggleArchive(activePartner._id)}
+                      title={archivedChatIds.includes(activePartner._id) ? "Unarchive conversation" : "Archive conversation"}
+                      aria-label="Archive Chat"
+                    >
+                      <IconArchive size={16} />
+                    </button>
+                  </>
+                )}
+
                 {/* WebRTC 1-on-1 Voice & Video Calling */}
                 {activePartner && activePartner._id !== user?._id && (
                   <>
@@ -1871,7 +2388,7 @@ export const ChatBox = () => {
                       type="button"
                       className="chat-header-btn call-action-btn"
                       onClick={() => setOutgoingCallSession({ partner: activePartner, callType: 'audio' })}
-                      title={`Start Voice Call with ${activePartner.name}`}
+                      title={`Start Voice Call with ${getDisplayName(activePartner)}`}
                       aria-label="Voice Call"
                     >
                       <IconPhone size={17} />
@@ -1880,7 +2397,7 @@ export const ChatBox = () => {
                       type="button"
                       className="chat-header-btn call-action-btn"
                       onClick={() => setOutgoingCallSession({ partner: activePartner, callType: 'video' })}
-                      title={`Start Video Call with ${activePartner.name}`}
+                      title={`Start Video Call with ${getDisplayName(activePartner)}`}
                       aria-label="Video Call"
                     >
                       <IconVideo size={17} />
@@ -3143,6 +3660,53 @@ export const ChatBox = () => {
           </div>
         </div>
       )}
+
+      {/* 24-Hour Stories / Status Viewer Modal */}
+      {selectedStatusGroup && (
+        <StatusViewerModal
+          statusGroup={selectedStatusGroup}
+          onClose={() => setSelectedStatusGroup(null)}
+          onViewStatus={handleViewStatus}
+          onDeleteStatus={handleDeleteStatus}
+          onReply={handleReplyToStatus}
+          currentUserId={user?._id}
+        />
+      )}
+
+      {/* New Status / Story Creator Modal */}
+      {showStatusCreator && (
+        <StatusCreatorModal
+          onClose={() => setShowStatusCreator(false)}
+          onCreated={handleStatusCreated}
+        />
+      )}
+
+      {/* Chat Lock 4-Digit PIN Security Modal */}
+      {lockModalConfig.isOpen && (
+        <ChatLockModal
+          mode={lockModalConfig.mode}
+          targetName={getDisplayName(lockModalConfig.targetPartner)}
+          existingPin={chatLockPin}
+          onSavePin={handleSavePin}
+          onSuccess={() => {
+            const cb = lockModalConfig.onVerified;
+            setLockModalConfig({ isOpen: false, mode: 'verify', targetPartner: null, onVerified: null });
+            if (cb) cb();
+          }}
+          onClose={() => setLockModalConfig({ isOpen: false, mode: 'verify', targetPartner: null, onVerified: null })}
+        />
+      )}
+
+      {/* Custom Nickname Editor Modal */}
+      {nicknameModalTarget && (
+        <NicknameModal
+          targetUser={nicknameModalTarget}
+          currentNickname={nicknames[nicknameModalTarget._id]}
+          onSave={handleSaveNickname}
+          onClose={() => setNicknameModalTarget(null)}
+        />
+      )}
     </div>
   );
 };
+

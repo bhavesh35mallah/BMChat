@@ -22,6 +22,7 @@ export const SocketProvider = ({ children }) => {
   const [pollUpdated, setPollUpdated] = useState(null);
   const [gameUpdated, setGameUpdated] = useState(null);
   const [ghostMode, setGhostMode] = useState(() => localStorage.getItem('ghost_mode') === 'true');
+  const [newStatusUpdate, setNewStatusUpdate] = useState(null);
 
   // WebRTC Calling Signaling States
   const [incomingCall, setIncomingCall] = useState(null);
@@ -141,6 +142,10 @@ export const SocketProvider = ({ children }) => {
 
       newSocket.on('remote_screen_share_status', ({ isSharing }) => {
         setRemoteScreenShare(!!isSharing);
+      });
+
+      newSocket.on('new_status_available', (data) => {
+        setNewStatusUpdate(data);
       });
 
       return () => {
@@ -267,6 +272,11 @@ export const SocketProvider = ({ children }) => {
   const sendScreenShareStatus = ({ targetUserId, isSharing }) => {
     if (!socketRef.current) return;
     socketRef.current.emit('screen_share_status', { targetUserId, isSharing });
+  };
+
+  const broadcastStatus = (statusData) => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('status_posted', statusData);
   };
 
   const clearIncomingCall = () => {
@@ -431,6 +441,8 @@ export const SocketProvider = ({ children }) => {
         callEnded,
         iceCandidateReceived,
         remoteScreenShare,
+        newStatusUpdate,
+        broadcastStatus,
         callUser,
         answerCall,
         rejectCall,

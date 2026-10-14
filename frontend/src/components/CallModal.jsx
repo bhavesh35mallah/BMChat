@@ -20,72 +20,88 @@ const RTC_CONFIG = {
   ],
 };
 
-// Robust Media Stream Acquisition with seamless fallbacks
-const acquireUserMedia = async ({ video, audio }) => {
-  // 1. Try full requested constraints
-  if (navigator?.mediaDevices?.getUserMedia) {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: video ? { width: { ideal: 1280 }, height: { ideal: 720 } } : false,
-        audio: audio ? { echoCancellation: true, noiseSuppression: true } : false,
-      });
-      return stream;
-    } catch (err) {
-      console.warn('Initial camera/mic acquisition failed, attempting audio-only...', err);
-    }
-
-    // 2. Fallback to audio only if video failed (e.g. no webcam plugged in)
-    if (video) {
-      try {
-        const audioStream = await navigator.mediaDevices.getUserMedia({
-          video: false,
-          audio: audio ? true : false,
-        });
-        return audioStream;
-      } catch (audioErr) {
-        console.warn('Audio-only fallback also failed, attempting synthetic track...', audioErr);
-      }
-    }
-  }
-
-  // 3. Synthetic stream fallback (ensures WebRTC handshake never drops if no hardware is attached)
+// Canvas synthetic blank video track to ensure video channel is ALWAYS negotiated
+const createBlankVideoTrack = () => {
   try {
     const canvas = document.createElement('canvas');
     canvas.width = 640;
     canvas.height = 480;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#0f172a';
+    ctx.fillStyle = '#090d16';
     ctx.fillRect(0, 0, 640, 480);
-    ctx.fillStyle = '#6366f1';
-    ctx.font = 'bold 22px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Live Video Feed', 320, 240);
+    const stream = canvas.captureStream ? canvas.captureStream(5) : null;
+    const track = stream ? stream.getVideoTracks()[0] : null;
+    if (track) {
+      track.enabled = false;
+      return track;
+    }
+  } catch (e) {
+    console.warn('Could not generate canvas blank track:', e);
+  }
+  return null;
+};
 
-    const canvasStream = canvas.captureStream ? canvas.captureStream(10) : null;
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (AudioCtx) {
-      const audioCtx = new AudioCtx();
-      const osc = audioCtx.createOscillator();
-      const dst = audioCtx.createMediaStreamDestination();
-      const gain = audioCtx.createGain();
-      gain.gain.value = 0.00001; // inaudible carrier
-      osc.connect(gain);
-      gain.connect(dst);
-      osc.start();
+// Robust Media Stream Acquisition: always guarantees both audio and video tracks
+const acquireUserMedia = async ({ video, audio }) => {
+  let stream = null;
 
-      const tracks = [
-        ...(canvasStream ? canvasStream.getVideoTracks() : []),
-        ...dst.stream.getAudioTracks(),
-      ];
-      if (tracks.length > 0) {
-        return new MediaStream(tracks);
+  // 1. Try camera + mic if video requested
+  if (navigator?.mediaDevices?.getUserMedia) {
+    if (video) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: audio ? { echoCancellation: true, noiseSuppression: true } : false,
+        });
+      } catch (err) {
+        console.warn('Camera acquisition failed, trying audio only...', err);
       }
     }
-  } catch (synthErr) {
-    console.warn('Synthetic track generation failed:', synthErr);
+
+    // 2. Audio-only acquisition if video was false or camera failed
+    if (!stream) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: false,
+          audio: audio ? { echoCancellation: true, noiseSuppression: true } : true,
+        });
+      } catch (audioErr) {
+        console.warn('Audio-only acquisition failed, generating fallback synthetic...', audioErr);
+      }
+    }
   }
 
-  throw new Error('Unable to access media input device.');
+  // 3. Fallback synthetic audio if mic completely unavailable
+  if (!stream) {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        const audioCtx = new AudioCtx();
+        const osc = audioCtx.createOscillator();
+        const dst = audioCtx.createMediaStreamDestination();
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0.00001;
+        osc.connect(gain);
+        gain.connect(dst);
+        osc.start();
+        stream = new MediaStream(dst.stream.getAudioTracks());
+      }
+    } catch (e) {}
+  }
+
+  if (!stream) {
+    stream = new MediaStream();
+  }
+
+  // 4. Guarantee video track is present so screen share / video track swapping ALWAYS works seamlessly!
+  if (stream.getVideoTracks().length === 0) {
+    const blankTrack = createBlankVideoTrack();
+    if (blankTrack) {
+      stream.addTrack(blankTrack);
+    }
+  }
+
+  return stream;
 };
 
 // Web Audio API Ringtone & Chimes
@@ -228,6 +244,7 @@ export const CallModal = ({
   const remoteStreamRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const remoteAudioRef = useRef(null);
   const callTimerRef = useRef(null);
   const modalContainerRef = useRef(null);
 
@@ -291,6 +308,11 @@ export const CallModal = ({
         }
       }
 
+      if (remoteAudioRef.current && remoteStreamRef.current) {
+        remoteAudioRef.current.srcObject = remoteStreamRef.current;
+        remoteAudioRef.current.play().catch(() => {});
+      }
+
       if (remoteVideoRef.current && remoteStreamRef.current) {
         remoteVideoRef.current.srcObject = remoteStreamRef.current;
         remoteVideoRef.current.play().catch(() => {});
@@ -351,12 +373,6 @@ export const CallModal = ({
 
           const pc = createPeerConnection(partner._id);
           stream.getTracks().forEach((track) => pc.addTrack(track, stream));
-
-          // Ensure video transceiver is available for screen share even if call starts audio-only
-          const hasVideoSender = pc.getSenders().some((s) => s.track && s.track.kind === 'video');
-          if (!hasVideoSender && pc.addTransceiver) {
-            pc.addTransceiver('video', { direction: 'sendrecv' });
-          }
 
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
@@ -456,12 +472,6 @@ export const CallModal = ({
       const pc = createPeerConnection(incomingCall.callerId);
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
-      // Ensure video transceiver is available for screen share even if call starts audio-only
-      const hasVideoSender = pc.getSenders().some((s) => s.track && s.track.kind === 'video');
-      if (!hasVideoSender && pc.addTransceiver) {
-        pc.addTransceiver('video', { direction: 'sendrecv' });
-      }
-
       await pc.setRemoteDescription(new RTCSessionDescription(incomingCall.offer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
@@ -540,12 +550,9 @@ export const CallModal = ({
         ? localStreamRef.current.getVideoTracks()[0]
         : null;
 
-      if (videoSender) {
-        if (originalVideoTrack && !isVideoDisabled) {
-          await videoSender.replaceTrack(originalVideoTrack);
-        } else {
-          await videoSender.replaceTrack(null);
-        }
+      if (videoSender && originalVideoTrack) {
+        originalVideoTrack.enabled = !isVideoDisabled;
+        await videoSender.replaceTrack(originalVideoTrack);
       }
     }
 
@@ -651,6 +658,9 @@ export const CallModal = ({
 
   return (
     <div className="call-modal-backdrop">
+      {/* Dedicated audio element ensures incoming voice always plays without depending on video visibility */}
+      <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
+
       <div
         ref={modalContainerRef}
         className={`call-modal-window glass-card ${isFullscreen ? 'fullscreen-call' : ''}`}

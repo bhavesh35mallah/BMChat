@@ -8150,3 +8150,641 @@ label {
   background: rgba(244, 63, 94, 0.25);
   border-color: var(--error);
 }
+
+/* ============================================================
+   STATUS / STORIES SECTION & MODAL STYLES
+   ============================================================ */
+.status-tab-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  margin-left: 0.35rem;
+  display: inline-block;
+  animation: pulse 2s infinite;
+}
+
+.status-tab-header-action {
+  padding: 0.4rem 0.75rem 0.75rem;
+}
+
+.btn-create-status-banner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(16, 185, 129, 0.25);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-create-status-banner:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(16, 185, 129, 0.35);
+  filter: brightness(1.05);
+}
+
+.status-directory-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.status-my-item {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--card-border);
+  gap: 0.85rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.status-my-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.status-avatar-ring {
+  position: relative;
+  border-radius: 50%;
+  padding: 2.5px;
+  display: inline-flex;
+}
+
+.status-avatar-ring.unviewed {
+  background: linear-gradient(135deg, #10b981, #06b6d4, #6366f1);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.status-avatar-ring.viewed {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.status-avatar-ring.has-status {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.status-avatar-ring.no-status {
+  background: transparent;
+}
+
+.my-status-add-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #10b981;
+  color: #fff;
+  border: 2px solid var(--bg-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s;
+}
+
+.my-status-add-badge:hover {
+  transform: scale(1.15);
+}
+
+.status-divider-title {
+  padding: 0.85rem 1rem 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
+.no-status-box {
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.no-status-icon {
+  margin-bottom: 0.65rem;
+  opacity: 0.5;
+}
+
+.no-status-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.3rem;
+}
+
+.no-status-desc {
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.status-contact-item {
+  cursor: pointer;
+}
+
+.status-time-tag {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.text-unviewed {
+  color: #10b981 !important;
+}
+
+/* ============================================================
+   ARCHIVED CHATS SECTION & FOLDER ROW
+   ============================================================ */
+.archived-folder-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.7rem 1rem;
+  background: rgba(99, 102, 241, 0.06);
+  border-bottom: 1px solid var(--card-border);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.archived-folder-row:hover {
+  background: rgba(99, 102, 241, 0.12);
+}
+
+.archived-folder-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.18);
+  color: #818cf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.archived-folder-label {
+  flex: 1;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.archived-count-pill {
+  padding: 0.15rem 0.55rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.archived-back-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1rem;
+  background: rgba(99, 102, 241, 0.12);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.2);
+  cursor: pointer;
+  color: #a5b4fc;
+  font-size: 0.825rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.archived-back-banner:hover {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+.archived-back-banner .back-arrow {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.archived-back-banner .back-title {
+  flex: 1;
+}
+
+/* ============================================================
+   CHAT LOCK & NICKNAME BADGES
+   ============================================================ */
+.chat-item-locked {
+  position: relative;
+}
+
+.locked-badge-tag {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.4rem;
+  color: #f59e0b;
+  vertical-align: middle;
+}
+
+.header-lock-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.4rem;
+  color: #f59e0b;
+}
+
+.header-archive-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.4rem;
+  color: #818cf8;
+}
+
+.header-realname-sub {
+  margin-left: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.nickname-display-text {
+  font-weight: 700;
+  color: #6ee7b7;
+}
+
+.real-name-subtitle {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 0.35rem;
+}
+
+/* ============================================================
+   STATUS STORY VIEWER MODAL
+   ============================================================ */
+.status-viewer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-viewer-container {
+  width: 100%;
+  max-width: 440px;
+  height: 90vh;
+  max-height: 780px;
+  background: #111827;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.status-progress-track {
+  display: flex;
+  gap: 5px;
+  padding: 12px 14px 6px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%);
+}
+
+.status-progress-segment {
+  flex: 1;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.status-progress-fill {
+  height: 100%;
+  background: #fff;
+  transition: width 0.05s linear;
+}
+
+.status-header-meta {
+  position: absolute;
+  top: 24px;
+  left: 14px;
+  right: 14px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #fff;
+}
+
+.status-author-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-author-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid #fff;
+}
+
+.status-author-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+.status-author-time {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.status-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.status-btn-icon:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.status-slide-viewport {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.status-touch-nav-left,
+.status-touch-nav-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 35%;
+  z-index: 20;
+  cursor: pointer;
+}
+
+.status-touch-nav-left { left: 0; }
+.status-touch-nav-right { right: 0; }
+
+.status-text-slide {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #fff;
+  word-break: break-word;
+  user-select: none;
+}
+
+.status-image-slide {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.status-image-element {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.status-image-caption-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.85) 100%);
+  color: #fff;
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.status-story-footer {
+  padding: 12px 14px 16px;
+  background: #000;
+  z-index: 30;
+}
+
+.status-reply-form {
+  display: flex;
+  gap: 8px;
+}
+
+.status-reply-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 8px 16px;
+  color: #fff;
+  font-size: 0.85rem;
+}
+
+.status-reply-input:focus {
+  outline: none;
+  border-color: #10b981;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.status-reply-submit {
+  padding: 8px 16px;
+  border-radius: 20px;
+  background: #10b981;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  border: none;
+  cursor: pointer;
+}
+
+.status-views-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+}
+
+/* ============================================================
+   STATUS CREATOR MODAL
+   ============================================================ */
+.status-creator-card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.status-type-selector {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px;
+  border-radius: var(--radius-md);
+  gap: 4px;
+}
+
+.status-type-pill {
+  flex: 1;
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.85rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.status-type-pill.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.status-text-preview-box {
+  min-height: 180px;
+  border-radius: var(--radius-md);
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: background 0.3s ease;
+}
+
+.status-text-textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+  resize: none;
+  outline: none;
+}
+
+.status-color-swatches {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.status-swatch-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.status-swatch-circle:hover {
+  transform: scale(1.15);
+}
+
+.status-swatch-circle.active {
+  border-color: #fff;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+  transform: scale(1.15);
+}
+
+/* ============================================================
+   CHAT LOCK PIN MODAL
+   ============================================================ */
+.lock-pin-container {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin: 1.5rem 0;
+}
+
+.lock-pin-box {
+  width: 48px;
+  height: 54px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.lock-pin-box:focus {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+}
+
+.lock-pin-box.filled {
+  border-color: #6366f1;
+}
+
+@media (max-width: 768px) {
+  .status-viewer-container {
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+}
