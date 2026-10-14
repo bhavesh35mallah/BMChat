@@ -2840,127 +2840,133 @@ export const ChatBox = () => {
                   />
                 )}
 
-                {/* Emoji Picker Button */}
-                <button
-                  type="button"
-                  className={`chat-action-btn ${showEmojiPicker ? 'active' : ''}`}
-                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                  title="Add Emoji"
-                  aria-label="Add Emoji"
-                >
-                  <IconSmile size={19} />
-                </button>
-
-                {/* Photo Attachment Button */}
-                <label className="chat-action-btn" title="Send Image" aria-label="Send Image">
-                  <IconImage size={19} />
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageSelect}
-                    style={{ display: 'none' }}
-                  />
-                </label>
-
-                {/* Document Attachment Button */}
-                <label className="chat-action-btn" title="Send Document (PDF, DOC, TXT)" aria-label="Send Document">
-                  <IconPaperclip size={19} />
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.txt,.zip,.csv,.json,.xls,.xlsx"
-                    onChange={handleDocumentSelect}
-                    style={{ display: 'none' }}
-                  />
-                </label>
-
-                {/* Interactive Poll Button */}
-                <button
-                  type="button"
-                  className="chat-action-btn"
-                  onClick={() => setShowPollModal(true)}
-                  title="Create Interactive Poll"
-                  aria-label="Create Poll"
-                >
-                  <IconPoll size={19} />
-                </button>
-
-                {/* Code Snippet Button */}
-                <button
-                  type="button"
-                  className="chat-action-btn"
-                  onClick={() => setShowCodeModal(true)}
-                  title="Share Formatted Code Snippet"
-                  aria-label="Share Code"
-                >
-                  <IconCode size={19} />
-                </button>
-
-                {/* In-Chat Mini Game (Tic-Tac-Toe) Button */}
-                <button
-                  type="button"
-                  className="chat-action-btn"
-                  onClick={handleStartGame}
-                  title="Challenge to Tic-Tac-Toe Game"
-                  aria-label="Play Game"
-                >
-                  <IconGame size={19} />
-                </button>
-
-                {/* Speech-to-Text Button */}
-                <button
-                  type="button"
-                  className={`chat-action-btn ${isSpeechListening ? 'speech-listening-active' : ''}`}
-                  onClick={toggleSpeechRecognition}
-                  title={isSpeechListening ? 'Listening... Click to stop' : 'Speech-to-Text Voice Dictation'}
-                  aria-label="Speech to text"
-                >
-                  <IconMic size={19} />
-                </button>
-
-                {/* Text Input */}
-                <input
-                  type="text"
-                  className="chat-text-input"
-                  placeholder={
-                    editingMessage
-                      ? 'Edit message content...'
-                      : activeGroup
-                      ? `Message group ${activeGroup.name}...`
-                      : `Message ${activePartner?.name || 'chat'}...`
-                  }
-                  value={inputText}
-                  onChange={handleInputChange}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                />
-
-                {/* Voice Note Record or Send/Save Button */}
-                {!inputText.trim() && !attachedImage && !attachedFile && !editingMessage ? (
+                {/* Tools Ribbon Row (scrolls horizontally on mobile, sits inline on desktop) */}
+                <div className="chat-input-tools-row">
+                  {/* Emoji Picker Button */}
                   <button
                     type="button"
-                    className="chat-mic-btn"
-                    onClick={startVoiceRecording}
-                    title="Record Voice Note"
-                    aria-label="Record Voice Note"
+                    className={`chat-action-btn ${showEmojiPicker ? 'active' : ''}`}
+                    onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                    title="Add Emoji"
+                    aria-label="Add Emoji"
                   >
-                    <IconMic size={18} />
+                    <IconSmile size={19} />
                   </button>
-                ) : (
-                  /* Send / Save Button */
+
+                  {/* Photo Attachment Button */}
+                  <label className="chat-action-btn" title="Send Image" aria-label="Send Image">
+                    <IconImage size={19} />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+
+                  {/* Document Attachment Button */}
+                  <label className="chat-action-btn" title="Send Document (PDF, DOC, TXT)" aria-label="Send Document">
+                    <IconPaperclip size={19} />
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,.txt,.zip,.csv,.json,.xls,.xlsx"
+                      onChange={handleDocumentSelect}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+
+                  {/* Interactive Poll Button */}
                   <button
-                    type="submit"
-                    className={`chat-send-btn ${editingMessage ? 'btn-save-edit' : ''}`}
-                    title={editingMessage ? 'Save changes' : 'Send Message'}
-                    aria-label={editingMessage ? 'Save changes' : 'Send Message'}
+                    type="button"
+                    className="chat-action-btn"
+                    onClick={() => setShowPollModal(true)}
+                    title="Create Interactive Poll"
+                    aria-label="Create Poll"
                   >
-                    <span>{editingMessage ? 'Save' : 'Send'}</span>
-                    <IconSend size={15} />
+                    <IconPoll size={19} />
                   </button>
-                )}
+
+                  {/* Code Snippet Button */}
+                  <button
+                    type="button"
+                    className="chat-action-btn"
+                    onClick={() => setShowCodeModal(true)}
+                    title="Share Formatted Code Snippet"
+                    aria-label="Share Code"
+                  >
+                    <IconCode size={19} />
+                  </button>
+
+                  {/* In-Chat Mini Game (Tic-Tac-Toe) Button */}
+                  <button
+                    type="button"
+                    className="chat-action-btn"
+                    onClick={handleStartGame}
+                    title="Challenge to Tic-Tac-Toe Game"
+                    aria-label="Play Game"
+                  >
+                    <IconGame size={19} />
+                  </button>
+
+                  {/* Speech-to-Text Button */}
+                  <button
+                    type="button"
+                    className={`chat-action-btn ${isSpeechListening ? 'speech-listening-active' : ''}`}
+                    onClick={toggleSpeechRecognition}
+                    title={isSpeechListening ? 'Listening... Click to stop' : 'Speech-to-Text Voice Dictation'}
+                    aria-label="Speech to text"
+                  >
+                    <IconMic size={19} />
+                  </button>
+                </div>
+
+                {/* Main Input & Send Row */}
+                <div className="chat-input-main-row">
+                  {/* Text Input */}
+                  <input
+                    type="text"
+                    className="chat-text-input"
+                    placeholder={
+                      editingMessage
+                        ? 'Edit message content...'
+                        : activeGroup
+                        ? `Message group ${activeGroup.name}...`
+                        : `Message ${activePartner?.name || 'chat'}...`
+                    }
+                    value={inputText}
+                    onChange={handleInputChange}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                  />
+
+                  {/* Voice Note Record or Send/Save Button */}
+                  {!inputText.trim() && !attachedImage && !attachedFile && !editingMessage ? (
+                    <button
+                      type="button"
+                      className="chat-mic-btn"
+                      onClick={startVoiceRecording}
+                      title="Record Voice Note"
+                      aria-label="Record Voice Note"
+                    >
+                      <IconMic size={18} />
+                    </button>
+                  ) : (
+                    /* Send / Save Button */
+                    <button
+                      type="submit"
+                      className={`chat-send-btn ${editingMessage ? 'btn-save-edit' : ''}`}
+                      title={editingMessage ? 'Save changes' : 'Send Message'}
+                      aria-label={editingMessage ? 'Save changes' : 'Send Message'}
+                    >
+                      <span>{editingMessage ? 'Save' : 'Send'}</span>
+                      <IconSend size={15} />
+                    </button>
+                  )}
+                </div>
               </form>
             )}
           </>

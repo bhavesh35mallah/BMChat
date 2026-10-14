@@ -3241,6 +3241,22 @@ label {
   gap: 0.65rem;
   position: relative;
   flex-shrink: 0;
+  width: 100%;
+}
+
+.chat-input-tools-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.chat-input-main-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex: 1;
+  min-width: 0;
 }
 
 .chat-action-btn {
@@ -3911,6 +3927,13 @@ label {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  width: 100%;
+}
+
+.poll-option-row .form-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: auto;
 }
 
 .option-num-badge {
@@ -4805,15 +4828,37 @@ label {
     display: none;
   }
 
+  /* Compact Navbar Actions on Tablet & Mobile */
+  .nav-btn-text,
+  .user-name-label,
+  .status-pill-text {
+    display: none;
+  }
+
+  .nav-actions {
+    gap: 0.35rem;
+  }
+
   .nav-btn {
-    padding: 0.4rem 0.65rem;
+    padding: 0.45rem;
+    min-width: 34px;
+    height: 34px;
     font-size: 0.8rem;
+    justify-content: center;
+  }
+
+  .theme-toggle-btn {
+    padding: 0.45rem;
+    min-width: 34px;
+    height: 34px;
+    justify-content: center;
   }
 
   /* Seamless Mobile Chat View Transitions */
   .chatbox-wrapper {
     grid-template-columns: 1fr;
     height: calc(100vh - 85px);
+    height: calc(100dvh - 85px);
     min-height: 480px;
     max-height: none;
     border-radius: var(--radius-md);
@@ -4848,12 +4893,45 @@ label {
   }
 
   .chat-header {
-    padding: 0.65rem 0.85rem;
+    padding: 0.55rem 0.75rem;
+    gap: 0.45rem;
+    min-width: 0;
+  }
+
+  .active-user-meta {
+    min-width: 0;
+    flex: 1;
     gap: 0.5rem;
   }
 
-  .chat-header-actions {
+  .active-partner-name {
+    display: flex;
+    align-items: center;
     gap: 0.35rem;
+    min-width: 0;
+    max-width: clamp(100px, 32vw, 170px);
+  }
+
+  .active-partner-name span:first-child {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .chat-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+    max-width: 58%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+
+  .chat-header-actions::-webkit-scrollbar {
+    display: none;
   }
 
   .chat-header-btn {
@@ -4886,49 +4964,188 @@ label {
     font-size: 0.75rem;
   }
 
-  .active-partner-name {
-    max-width: 140px;
-    font-size: 0.92rem;
-  }
-
   .chat-messages-container {
-    padding: 0.85rem;
+    padding: 0.75rem 0.6rem;
   }
 
   .message-row {
-    max-width: 88%;
+    max-width: 90%;
   }
 
   .bubble-image-wrap {
     max-width: 220px;
   }
 
+  /* Two-tier responsive mobile input bar */
   .chat-input-bar {
-    padding: 0.6rem 0.75rem;
+    flex-direction: column;
+    align-items: stretch;
     gap: 0.45rem;
+    padding: 0.55rem 0.65rem;
+  }
+
+  .chat-input-tools-row {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    gap: 0.4rem;
+    padding-bottom: 2px;
+  }
+
+  .chat-input-tools-row::-webkit-scrollbar {
+    display: none;
   }
 
   .chat-action-btn {
     width: 36px;
     height: 36px;
     font-size: 1.05rem;
+    flex-shrink: 0;
+  }
+
+  .chat-input-main-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
   }
 
   .chat-text-input {
-    padding: 0.55rem 0.75rem;
-    font-size: 0.88rem;
+    flex: 1;
+    min-width: 0;
+    height: 42px;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.92rem;
   }
 
+  .chat-mic-btn,
   .chat-send-btn {
-    padding: 0.55rem 0.9rem;
-    font-size: 0.825rem;
+    height: 42px;
+    padding: 0 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
   }
 
   .emoji-picker-popover {
     left: 0.5rem;
     right: 0.5rem;
     width: auto;
-    bottom: 58px;
+    bottom: 95px;
+  }
+
+  /* Full Mobile Modals Overhaul */
+  .modal-backdrop {
+    padding: 0.5rem;
+    align-items: flex-end;
+  }
+
+  .create-poll-modal,
+  .code-snippet-modal,
+  .create-group-modal,
+  .modal-content,
+  .profile-card-modal,
+  .forward-modal,
+  .group-info-drawer {
+    width: 100%;
+    max-width: 100%;
+    max-height: 88vh;
+    max-height: 88dvh;
+    padding: 1.25rem 1rem;
+    border-radius: var(--radius-xl) var(--radius-xl) var(--radius-md) var(--radius-md);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+  }
+
+  .modal-header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+  }
+
+  .modal-title {
+    font-size: 1.2rem;
+  }
+
+  .modal-desc,
+  .modal-subtitle {
+    font-size: 0.8rem;
+  }
+
+  .poll-icon-badge,
+  .snippet-icon-badge,
+  .create-group-icon-badge {
+    width: 38px;
+    height: 38px;
+  }
+
+  .option-num-badge,
+  .btn-remove-option {
+    width: 38px;
+    height: 42px;
+    font-size: 0.85rem;
+  }
+
+  .form-input {
+    height: 42px;
+    font-size: 0.9rem;
+    padding: 0 0.85rem;
+  }
+
+  .btn-add-option {
+    height: 40px;
+    font-size: 0.84rem;
+  }
+
+  .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+    width: 100%;
+    margin-top: 1.15rem;
+    padding-top: 1rem;
+  }
+
+  .modal-actions .btn {
+    width: 100%;
+    padding: 0.65rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .group-icons-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.35rem;
+  }
+
+  .group-icon-btn {
+    height: 36px;
+    font-size: 0.78rem;
+  }
+
+  .member-info-left {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .member-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .member-email {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+  }
+
+  .code-editor-textarea {
+    min-height: 150px;
+    font-size: 0.8rem;
+    padding: 0.75rem;
   }
 
   /* Dashboard on Mobile */
@@ -4988,18 +5205,6 @@ label {
 
 /* Small Phone Screens (<= 480px) */
 @media (max-width: 480px) {
-  .nav-btn-text {
-    display: none;
-  }
-
-  .user-name-label {
-    display: none;
-  }
-
-  .status-pill-text {
-    display: none;
-  }
-
   .status-pill {
     padding: 0.35rem;
   }
@@ -5011,10 +5216,6 @@ label {
   .grid-cols-2 {
     grid-template-columns: 1fr;
     gap: 0.75rem;
-  }
-
-  .modal-content {
-    padding: 1.25rem;
   }
 
   .presets-grid {
@@ -5029,6 +5230,27 @@ label {
 
   .avatar-controls {
     align-items: center;
+  }
+
+  .recording-label {
+    display: none;
+  }
+}
+
+@media (max-width: 380px) {
+  .create-poll-modal,
+  .code-snippet-modal,
+  .create-group-modal,
+  .modal-content,
+  .profile-card-modal,
+  .forward-modal,
+  .group-info-drawer {
+    padding: 1.1rem 0.8rem;
+  }
+
+  .modal-actions {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
   }
 }
 
