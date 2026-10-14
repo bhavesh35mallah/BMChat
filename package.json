@@ -1,0 +1,23 @@
+{
+  "name": "bmchat-app",
+  "version": "1.0.0",
+  "description": "BMChat - Realtime Team Messaging and Authentication App",
+  "private": true,
+  "scripts": {
+    "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
+    "start": "node backend/src/server.js",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "install:all": "npm install --prefix backend && npm install --prefix frontend"
+  },
+  "keywords": [
+    "mern",
+    "chat",
+    "socket.io",
+    "render",
+    "react",
+    "express"
+  ],
+  "author": "Bhavesh Mallah",
+  "license": "ISC"
+}

@@ -1,0 +1,255 @@
+:root,
+[data-theme="light"] {
+  --font-main: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-script: 'Caveat', cursive;
+  --font-mono: 'Geist Mono', 'JetBrains Mono', monospace;
+
+  /* ==========================================================================
+     LIGHT THEME (Warm Cream & Deep Navy Editorial Luxury)
+     ========================================================================== */
+  --bg-primary: #f6f2ea;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #efe8dc;
+  --bg-elevated: #ffffff;
+
+  --navbar-bg: rgba(246, 242, 234, 0.94);
+  --navbar-border: rgba(215, 203, 185, 0.45);
+
+  --card-bg: #ffffff;
+  --card-border: #ede7dc;
+  --card-border-hover: #ded6c8;
+  --card-shadow: 0 24px 60px -12px rgba(60, 48, 30, 0.08), 0 4px 16px rgba(60, 48, 30, 0.03);
+
+  --modal-backdrop: rgba(18, 26, 38, 0.45);
+  --modal-bg: #ffffff;
+  --modal-border: #ede7dc;
+  --modal-header-border: #f6f2ea;
+  --modal-shadow: 0 30px 70px -12px rgba(25, 20, 15, 0.18);
+
+  --input-bg: #f8f6f1;
+  --input-border: #e6e0d5;
+  --input-text: #111d2e;
+  --input-placeholder: #8a96a6;
+  --input-focus-border: #0d2440;
+  --input-focus-ring: rgba(13, 36, 64, 0.15);
+
+  --chip-bg: #efe8dc;
+  --chip-border: #e2d9cb;
+  --chip-active-bg: rgba(13, 36, 64, 0.08);
+  --chip-active-border: #0d2440;
+
+  /* Deep Navy Accent + Warm Caramel Highlight */
+  --accent-primary: #0d2440;
+  --accent-hover: #16365f;
+  --accent-active: #091a2e;
+  --accent-subtle: rgba(13, 36, 64, 0.06);
+  --accent-border: rgba(13, 36, 64, 0.22);
+  --accent-gradient: linear-gradient(135deg, #0d2440 0%, #16365f 100%);
+  --accent-text: #ffffff;
+
+  --accent-warm: #b57a2e;
+  --accent-warm-hover: #9c6622;
+  --accent-script: #37598c;
+
+  /* Refined Editorial Typography */
+  --text-primary: #101c2e;
+  --text-secondary: #48576d;
+  --text-muted: #78879b;
+  --text-dim: #9aa7b8;
+
+  --success: #059669;
+  --success-bg: rgba(5, 150, 105, 0.08);
+  --success-border: rgba(5, 150, 105, 0.25);
+  --error: #dc2626;
+  --error-bg: rgba(220, 38, 38, 0.08);
+  --error-border: rgba(220, 38, 38, 0.25);
+  --warning: #b57a2e;
+  --warning-bg: rgba(181, 122, 46, 0.08);
+  --warning-border: rgba(181, 122, 46, 0.25);
+  --info: #0d2440;
+  --info-bg: rgba(13, 36, 64, 0.08);
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-2xl: 28px;
+  --radius-full: 9999px;
+
+  --shadow-sm: 0 1px 3px rgba(45, 35, 20, 0.04);
+  --shadow-md: 0 4px 14px rgba(45, 35, 20, 0.06);
+  --shadow-lg: 0 16px 36px rgba(45, 35, 20, 0.08);
+
+  --scrollbar-track: #f6f2ea;
+  --scrollbar-thumb: #dcd3c4;
+  --scrollbar-thumb-hover: #c4b9a7;
+
+  --theme-transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+}
+
+/* ==========================================================================
+   DARK THEME (Deep Midnight Obsidian Slate + Warm Amber Caramel)
+   ========================================================================== */
+[data-theme="dark"] {
+  --bg-primary: #0a101d;
+  --bg-secondary: #111b2e;
+  --bg-tertiary: #18243c;
+  --bg-elevated: #1f2e4c;
+
+  --navbar-bg: rgba(10, 16, 29, 0.94);
+  --navbar-border: rgba(255, 255, 255, 0.08);
+
+  --card-bg: #111b2e;
+  --card-border: rgba(255, 255, 255, 0.09);
+  --card-border-hover: rgba(255, 255, 255, 0.16);
+  --card-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.65);
+
+  --modal-backdrop: rgba(0, 0, 0, 0.82);
+  --modal-bg: #111b2e;
+  --modal-border: rgba(255, 255, 255, 0.1);
+  --modal-header-border: #18243c;
+  --modal-shadow: 0 25px 65px -10px rgba(0, 0, 0, 0.9);
+
+  --input-bg: #0c1524;
+  --input-border: #21324e;
+  --input-text: #f8fafc;
+  --input-placeholder: #64748b;
+  --input-focus-border: #38bdf8;
+  --input-focus-ring: rgba(56, 189, 248, 0.22);
+
+  --chip-bg: #18243c;
+  --chip-border: #263857;
+  --chip-active-bg: rgba(56, 189, 248, 0.14);
+  --chip-active-border: #38bdf8;
+
+  --accent-primary: #38bdf8;
+  --accent-hover: #0284c7;
+  --accent-active: #0369a1;
+  --accent-subtle: rgba(56, 189, 248, 0.12);
+  --accent-border: rgba(56, 189, 248, 0.3);
+  --accent-gradient: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+  --accent-text: #0a101d;
+
+  --accent-warm: #f59e0b;
+  --accent-warm-hover: #d97706;
+  --accent-script: #60a5fa;
+
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-dim: #475569;
+
+  --success: #10b981;
+  --success-bg: rgba(16, 185, 129, 0.12);
+  --success-border: rgba(16, 185, 129, 0.3);
+  --error: #ef4444;
+  --error-bg: rgba(239, 68, 68, 0.12);
+  --error-border: rgba(239, 68, 68, 0.3);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245, 158, 11, 0.12);
+  --warning-border: rgba(245, 158, 11, 0.3);
+  --info: #38bdf8;
+  --info-bg: rgba(56, 189, 248, 0.12);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.55);
+
+  --scrollbar-track: #0a101d;
+  --scrollbar-thumb: #1e2b44;
+  --scrollbar-thumb-hover: #2d3f63;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+body {
+  font-family: var(--font-main);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  line-height: 1.5;
+  letter-spacing: -0.011em;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: var(--theme-transition);
+}
+
+code,
+pre {
+  font-family: var(--font-mono);
+}
+
+a {
+  color: var(--accent-primary);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+button {
+  font-family: var(--font-main);
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+input,
+textarea,
+select {
+  font-family: var(--font-main);
+  outline: none;
+}
+
+/* ==========================================================================
+   GLOBAL SCROLLBAR STYLES (Adaptive)
+   ========================================================================== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-anim {
+  animation: spin 1s linear infinite;
+}
