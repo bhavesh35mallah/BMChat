@@ -27,6 +27,9 @@ export const sendOTPEmail = async ({ email, otp, purpose = 'login', name = '' })
   if (smtpHost && smtpUser && smtpPass) {
     try {
       const isGmail = smtpHost.includes('gmail.com');
+      const port = Number(process.env.SMTP_PORT) || 587;
+      const isSecure = process.env.SMTP_SECURE === 'true' || port === 465;
+
       const transporter = nodemailer.createTransport(
         isGmail
           ? {
@@ -35,19 +38,25 @@ export const sendOTPEmail = async ({ email, otp, purpose = 'login', name = '' })
                 user: smtpUser,
                 pass: smtpPass,
               },
+              connectionTimeout: 4000,
+              greetingTimeout: 4000,
+              socketTimeout: 5000,
             }
           : {
               host: smtpHost,
-              port: Number(process.env.SMTP_PORT) || 587,
-              secure: process.env.SMTP_SECURE === 'true',
+              port,
+              secure: isSecure,
               auth: {
                 user: smtpUser,
                 pass: smtpPass,
               },
+              connectionTimeout: 4000,
+              greetingTimeout: 4000,
+              socketTimeout: 5000,
             }
       );
 
-      const defaultFrom = smtpUser ? `"CraftFlow Auth" <${smtpUser}>` : '"CraftFlow Auth" <no-reply@craftflow.local>';
+      const defaultFrom = smtpUser ? `"BMChat Auth" <${smtpUser}>` : '"BMChat Auth" <no-reply@bmchat.local>';
       const fromAddress =
         process.env.EMAIL_FROM && !process.env.EMAIL_FROM.includes('yourdomain.com')
           ? process.env.EMAIL_FROM
@@ -57,7 +66,7 @@ export const sendOTPEmail = async ({ email, otp, purpose = 'login', name = '' })
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 520px; margin: 0 auto; background: #0f172a; color: #f8fafc; border-radius: 16px; padding: 32px 24px; border: 1px solid rgba(255,255,255,0.1);">
           <div style="text-align: center; margin-bottom: 24px;">
             <div style="display: inline-block; padding: 10px 16px; background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 12px; color: #818cf8; font-weight: 700; font-size: 16px;">
-              CraftFlow Authentication
+              BMChat Authentication
             </div>
           </div>
           <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 12px; text-align: center; color: #ffffff;">
@@ -77,7 +86,8 @@ export const sendOTPEmail = async ({ email, otp, purpose = 'login', name = '' })
         </div>
       `;
 
-      await transporter.sendMail({
+      // Enforce strict 4.5s timeout on email sending so the user is NEVER kept waiting
+      const sendPromise = transporter.sendMail({
         from: fromAddress,
         to: email,
         subject: `Your ${actionName} Code: ${otp}`,
@@ -85,11 +95,17 @@ export const sendOTPEmail = async ({ email, otp, purpose = 'login', name = '' })
         html: htmlContent,
       });
 
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('SMTP timeout: mail server took longer than 4.5 seconds to respond')), 4500)
+      );
+
+      await Promise.race([sendPromise, timeoutPromise]);
+
       console.log(`✅ [EMAIL SENT] Verification code successfully sent via SMTP to: ${email}`);
       return { success: true, mode: 'smtp' };
     } catch (err) {
       smtpError = err.message;
-      console.warn('⚠️ SMTP delivery failed, falling back to simulated delivery:', err.message);
+      console.warn('⚠️ SMTP delivery failed/timed out, continuing with code dispatch:', err.message);
     }
   }
 
