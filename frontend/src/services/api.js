@@ -29,8 +29,8 @@ async function request(baseUrl, endpoint, options = {}) {
     let url = `${baseUrl}${endpoint}`;
     let res = await fetch(url, config);
 
-    // If relative path gave 404, fallback directly to backend server (http://127.0.0.1:5000)
-    if (res.status === 404 && !url.startsWith('http')) {
+    // If relative path gave 404 in local development, fallback directly to backend server (http://127.0.0.1:5000)
+    if (res.status === 404 && !url.startsWith('http') && import.meta.env.DEV) {
       try {
         const directUrl = `http://127.0.0.1:5000${baseUrl}${endpoint}`;
         const directRes = await fetch(directUrl, config);

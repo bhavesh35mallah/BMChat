@@ -1,5 +1,6 @@
 import express from 'express';
 import http from 'http';
+import mongoose from 'mongoose';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
 import cors from 'cors';
@@ -48,11 +49,21 @@ app.use('/api/auth', authRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/groups', groupRoutes);
 
-// Health check endpoint
+// Health check and diagnostics endpoint
 app.get('/api/health', (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  const dbStatusMap = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting',
+  };
   res.status(200).json({
     status: 'ok',
-    message: 'MERN Auth API server is running smoothly',
+    database: dbStatusMap[dbState] || 'unknown',
+    mongoUriConfigured: !!process.env.MONGO_URI,
+    smtpConfigured: !!(process.env.SMTP_USER && process.env.SMTP_PASS),
+    environment: process.env.NODE_ENV || 'development',
     timestamp: new Date().toISOString(),
   });
 });
